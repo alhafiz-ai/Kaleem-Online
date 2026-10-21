@@ -1,0 +1,6 @@
+{
+  "name": "Al-Danish Online Islamic & Arabic Academy",
+  "description": "Professional Online Islamic & Arabic Academy with multi-language RTL support, 1-on-1 enrollment, digital store, scholar apps directory, and full admin control panel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

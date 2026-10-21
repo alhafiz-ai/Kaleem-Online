@@ -1,0 +1,202 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --primary-color: #064e3b;
+    --accent-color: #d97706;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Urdu Language Typography - Crystal Clear, Beautiful & Ultra-Legible */
+  html[lang="ur"] {
+    font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+    line-height: 1.95;
+    letter-spacing: 0.01em;
+  }
+
+  html[lang="ur"] body {
+    font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+  }
+
+  html[lang="ur"] h1, 
+  html[lang="ur"] h2, 
+  html[lang="ur"] h3, 
+  html[lang="ur"] h4,
+  html[lang="ur"] .font-kufi {
+    font-family: 'Noto Naskh Arabic', 'Cairo', 'Noto Sans Arabic', sans-serif;
+    line-height: 1.65;
+    font-weight: 700;
+  }
+
+  html[lang="ur"] .font-nastaliq {
+    font-family: 'Noto Nastaliq Urdu', 'Noto Naskh Arabic', serif;
+    line-height: 2.2;
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+  }
+
+  /* Arabic Language Typography - Prestigious, Modern & High Contrast */
+  html[lang="ar"] {
+    font-family: 'Noto Sans Arabic', 'Cairo', 'Noto Naskh Arabic', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.75;
+  }
+
+  html[lang="ar"] body {
+    font-family: 'Noto Sans Arabic', 'Cairo', 'Noto Naskh Arabic', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  html[lang="ar"] h1, 
+  html[lang="ar"] h2, 
+  html[lang="ar"] h3,
+  html[lang="ar"] h4 {
+    font-family: 'Noto Sans Arabic', 'Cairo', sans-serif;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  /* Inputs on mobile must be at least 16px to prevent iOS auto-zoom */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  @media (min-width: 640px) {
+    input, select, textarea {
+      font-size: 14px !important;
+    }
+  }
+}
+
+/* Crystal-Clear, Ultra-Legible Font for All Cards & Courses (Urdu & Arabic) */
+.font-card-title,
+.font-clear-title {
+  font-family: 'Noto Sans Arabic', 'Cairo', 'Noto Naskh Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
+
+html[lang="ur"] .font-card-title,
+html[lang="ur"] .font-clear-title {
+  font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif !important;
+  line-height: 1.6;
+}
+
+html[lang="ar"] .font-card-title,
+html[lang="ar"] .font-clear-title {
+  font-family: 'Noto Sans Arabic', 'Cairo', sans-serif !important;
+  line-height: 1.45;
+}
+
+/* Academy Brand Title & Grand Calligraphy */
+.font-academy-brand {
+  font-family: 'Reem Kufi', 'Amiri', 'Cairo', sans-serif;
+}
+html[lang="ur"] .font-academy-brand {
+  font-family: 'Noto Naskh Arabic', 'Amiri', 'Cairo', sans-serif;
+}
+html[lang="ar"] .font-academy-brand {
+  font-family: 'Reem Kufi', 'Amiri', 'Cairo', sans-serif;
+}
+
+/* Quranic Ayah & Calligraphy class */
+.font-amiri {
+  font-family: 'Amiri', 'Noto Naskh Arabic', serif;
+}
+
+.font-kufi {
+  font-family: 'Reem Kufi', 'Cairo', sans-serif;
+}
+
+.font-cairo {
+  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
+}
+
+.font-nastaliq {
+  font-family: 'Noto Nastaliq Urdu', 'Gulzar', 'Noto Naskh Arabic', serif;
+  line-height: 2.1;
+}
+
+/* Islamic Geometric Background & Luxury Accents */
+.islamic-pattern {
+  background-color: #042f2e;
+  background-image: radial-gradient(rgba(217, 119, 6, 0.15) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.islamic-pattern-light {
+  background-color: #fcfbf7;
+  background-image: radial-gradient(rgba(6, 78, 59, 0.08) 1.5px, transparent 0);
+  background-size: 20px 20px;
+}
+
+.gold-gradient {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+}
+
+.gold-border {
+  border-image: linear-gradient(to bottom right, #f59e0b, #d97706, #fbbf24) 1;
+}
+
+/* Mobile Scrollbar Cleanliness */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1c1917;
+}
+::-webkit-scrollbar-thumb {
+  background: #44403c;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d97706;
+}
+
+/* Touch Friendly Utilities */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Certificate Print Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-certificate, #printable-certificate * {
+    visibility: visible;
+  }
+  #printable-certificate {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 20px;
+  }
+  #printable-invoice, #printable-invoice * {
+    visibility: visible;
+  }
+  #printable-invoice {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 10px;
+  }
+}
