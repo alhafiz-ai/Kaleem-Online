@@ -1,5 +1,6 @@
 import React from 'react';
 import { Language, SiteSettings } from '../types';
+import { resolveAssetUrl } from '../utils/imageUtils';
 import { X, Award, CheckCircle2, BookOpen, GraduationCap, ShieldCheck } from 'lucide-react';
 
 interface FounderBioModalProps {
@@ -26,7 +27,7 @@ export const FounderBioModal: React.FC<FounderBioModalProps> = ({
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-950 border border-amber-400 flex items-center justify-center text-amber-300 font-amiri text-2xl shrink-0 overflow-hidden shadow">
               <img 
-                src={settings.founderImage || '/assets/aistudio/founder.jpg_450b2eb5.jpeg'} 
+                src={resolveAssetUrl(settings.founderImage || '/assets/aistudio/founder.jpg_450b2eb5.jpeg')} 
                 alt={settings.founderName[lang] || settings.founderName.en} 
                 className="w-full h-full object-cover object-top"
               />

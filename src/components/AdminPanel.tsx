@@ -13,6 +13,7 @@ import {
   Language
 } from '../types';
 import { storage } from '../utils/storage';
+import { resolveAssetUrl } from '../utils/imageUtils';
 import { INITIAL_POLICIES } from '../data/initialData';
 import { FounderBioModal } from './FounderBioModal';
 import { 
@@ -1761,7 +1762,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                 <div className="text-center space-y-3">
                   <div className="relative inline-block mx-auto">
                     <img 
-                      src={settings.founderImage || '/assets/aistudio/founder.jpg_450b2eb5.jpeg'} 
+                      src={resolveAssetUrl(settings.founderImage || '/assets/aistudio/founder.jpg_450b2eb5.jpeg')} 
                       alt="Mufti Danish Kaleem"
                       className="w-44 h-56 rounded-2xl object-cover object-top border-4 border-amber-400 shadow-2xl mx-auto"
                     />

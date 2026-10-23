@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Language, SiteSettings, ThemeMode } from '../types';
 import { UI_TEXT } from '../utils/translations';
+import { resolveAssetUrl } from '../utils/imageUtils';
 import { FounderBioModal } from './FounderBioModal';
 import { 
   Sparkles, 
@@ -181,7 +182,7 @@ export const Hero: React.FC<HeroProps> = ({
               <div className="flex items-center gap-3.5 sm:gap-4 mb-4">
                 <div className="relative shrink-0">
                   <img 
-                    src={settings.founderImage || '/assets/aistudio/founder.jpg_450b2eb5.jpeg'} 
+                    src={resolveAssetUrl(settings.founderImage || '/assets/aistudio/founder.jpg_450b2eb5.jpeg')} 
                     alt={settings.founderName[lang] || settings.founderName.en}
                     className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover object-top border-2 border-amber-400 shadow-xl"
                   />

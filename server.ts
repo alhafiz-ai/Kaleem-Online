@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,20 +16,31 @@ app.get('/healthz', (_req, res) => {
 
 // Serve compiled static assets from Vite build
 const distPath = path.join(__dirname, 'dist');
-app.use(express.static(distPath));
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+}
 
 // Admin route fallback
 app.get('/admin', (_req, res) => {
-  res.sendFile(path.join(distPath, 'admin.html'), (err) => {
-    if (err) {
-      res.sendFile(path.join(distPath, 'index.html'));
-    }
-  });
+  const adminFile = path.join(distPath, 'admin.html');
+  const indexFile = path.join(distPath, 'index.html');
+  if (fs.existsSync(adminFile)) {
+    res.sendFile(adminFile);
+  } else if (fs.existsSync(indexFile)) {
+    res.sendFile(indexFile);
+  } else {
+    res.status(200).send('Applet building, please refresh in a moment...');
+  }
 });
 
 // Single Page Application (SPA) fallback to index.html
 app.get('*', (_req, res) => {
-  res.sendFile(path.join(distPath, 'index.html'));
+  const indexFile = path.join(distPath, 'index.html');
+  if (fs.existsSync(indexFile)) {
+    res.sendFile(indexFile);
+  } else {
+    res.status(200).send('Applet building, please refresh in a moment...');
+  }
 });
 
 app.listen(Number(PORT), '0.0.0.0', () => {

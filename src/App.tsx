@@ -20,9 +20,13 @@ import { AdminPanel } from './components/AdminPanel';
 import { StudentPortalSection } from './components/StudentPortalSection';
 
 export default function App() {
-  // Check if initial hash or path wants admin
-  const isInitialAdmin = typeof window !== 'undefined' && 
-    (window.location.hash === '#admin' || window.location.pathname.includes('admin'));
+  // Check if initial hash or path wants admin (safe for subpaths/repo names)
+  const isInitialAdmin = typeof window !== 'undefined' && (
+    window.location.hash === '#admin' ||
+    window.location.pathname.endsWith('/admin') ||
+    window.location.pathname.endsWith('/admin/') ||
+    window.location.pathname.endsWith('/admin.html')
+  );
 
   const [viewMode, setViewMode] = useState<'site' | 'admin'>(isInitialAdmin ? 'admin' : 'site');
   
