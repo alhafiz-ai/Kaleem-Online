@@ -3538,8 +3538,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
       {/* ----------------- MODAL: INVOICE & RECEIPT VIEWER (MULTILINGUAL) ----------------- */}
       {selectedOrderForInvoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-5 sm:p-7 shadow-2xl overflow-y-auto max-h-[92vh]">
+        <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 pb-6 p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-5 sm:p-7 shadow-2xl overflow-y-auto max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0">
             
             {/* Header Controls */}
             <div className="flex items-center justify-between border-b border-stone-800 pb-3 mb-4">
@@ -3689,8 +3689,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
       {/* ----------------- MODAL: FULL COURSE EDITOR / CREATOR ----------------- */}
       {(editingCourse || showAddCourseModal) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-3xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[92vh] space-y-4">
+        <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 pb-6 p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-3xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 space-y-4">
             <h4 className="text-xl font-bold font-kufi text-amber-300">
               {editingCourse ? 'Edit Course Syllabus & Fee' : 'Publish New Course to Curriculum'}
             </h4>
@@ -3976,8 +3976,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
       {/* ----------------- MODAL: DIGITAL STORE ITEM FULL EDITOR ----------------- */}
       {(editingStoreItem || showAddStoreModal) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[92vh] space-y-4">
+        <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 pb-6 p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 space-y-4">
             <h4 className="text-xl font-bold font-kufi text-amber-300">
               {editingStoreItem ? 'Edit Bookstore Item & Digital Files' : 'Add New Bookstore Product / PDF'}
             </h4>
@@ -4181,8 +4181,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
       {/* ----------------- MODAL: DIGITAL PDF UPLOADER ----------------- */}
       {showAddPdfModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[92vh] space-y-4">
+        <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 pb-6 p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 space-y-4">
             <h4 className="text-xl font-bold font-kufi text-amber-300 flex items-center gap-2">
               <Upload className="w-5 h-5 text-amber-400" />
               <span>Upload New PDF Document / Book</span>
@@ -4321,8 +4321,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
       {/* ----------------- MODAL: MEDIA ADS & VIDEO/PIC ADD OR EDIT ----------------- */}
       {showAddMediaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[92vh] space-y-4">
+        <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 pb-6 p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 space-y-4">
             <h4 className="text-xl font-bold font-kufi text-amber-300">
               {editingMediaAd ? 'Edit Media Ad / Video Announcement' : 'Publish New Media Picture / Video'}
             </h4>

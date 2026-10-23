@@ -125,8 +125,8 @@ export const MediaAdsSection: React.FC<MediaAdsSectionProps> = ({
 
       {/* Lightbox Modal */}
       {activeMedia && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/90 backdrop-blur-md animate-in fade-in">
-          <div className="relative max-w-3xl w-full bg-stone-900 border-2 border-amber-500/60 rounded-3xl overflow-hidden shadow-2xl">
+        <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 md:pt-32 pb-6 px-3 sm:px-5 bg-stone-950/90 backdrop-blur-md overflow-y-auto animate-in fade-in">
+          <div className="relative max-w-3xl w-full bg-stone-900 border-2 border-amber-500/60 rounded-3xl overflow-hidden shadow-2xl my-auto sm:my-0 max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] flex flex-col">
             {/* Prominent High-Visibility Cancel / Close Button */}
             <button
               onClick={() => setActiveMedia(null)}

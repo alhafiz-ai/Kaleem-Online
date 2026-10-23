@@ -27,6 +27,7 @@ export const StoreCheckoutModal: React.FC<StoreCheckoutModalProps> = ({
   const [email, setEmail] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'easypaisa' | 'jazzcash' | 'sadapay' | 'bank' | 'wise_paypal'>('easypaisa');
   const [completedOrder, setCompletedOrder] = useState<EnrollmentOrder | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -35,8 +36,9 @@ export const StoreCheckoutModal: React.FC<StoreCheckoutModalProps> = ({
 
   const handleCheckout = (e: React.FormEvent) => {
     e.preventDefault();
+    setCheckoutError(null);
     if (!buyerName.trim() || !whatsapp.trim() || !fatherName.trim()) {
-      alert(
+      setCheckoutError(
         lang === 'ur' 
           ? "براہِ کرم طالب علم کا نام، والد کا نام اور واٹس ایپ نمبر درج فرمائیں۔"
           : lang === 'ar'
@@ -92,9 +94,9 @@ export const StoreCheckoutModal: React.FC<StoreCheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-stone-950/85 backdrop-blur-md animate-in fade-in">
+    <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 md:pt-32 pb-6 px-3 sm:px-5 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
       <div 
-        className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-stone-200"
+        className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 text-stone-200"
         dir={isRtl ? 'rtl' : 'ltr'}
       >
         {/* Pinned Modal Header with Prominent Cancel Button */}
@@ -159,6 +161,14 @@ export const StoreCheckoutModal: React.FC<StoreCheckoutModalProps> = ({
                 <span className="text-amber-400 text-lg font-mono">PKR {totalAmount.toLocaleString()}</span>
               </div>
             </div>
+
+            {/* Validation Error Message */}
+            {checkoutError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-200 text-xs font-semibold flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{checkoutError}</span>
+              </div>
+            )}
 
             {/* Checkout Form */}
             <form onSubmit={handleCheckout} className="space-y-4 text-xs sm:text-sm">

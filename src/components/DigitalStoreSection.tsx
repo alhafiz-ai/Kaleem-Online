@@ -278,11 +278,11 @@ export const DigitalStoreSection: React.FC<DigitalStoreSectionProps> = ({
       {/* Quick Item Details Modal */}
       {detailsModalItem && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-stone-950/80 backdrop-blur-sm animate-in fade-in"
+          className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 md:pt-32 pb-6 px-3 sm:px-5 bg-stone-950/80 backdrop-blur-sm overflow-y-auto animate-in fade-in"
           onClick={() => setDetailsModalItem(null)}
         >
           <div 
-            className={`relative w-full max-w-lg rounded-3xl border-2 p-5 sm:p-7 shadow-2xl overflow-hidden transition-all ${
+            className={`relative w-full max-w-lg rounded-3xl border-2 p-5 sm:p-7 shadow-2xl overflow-hidden max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 flex flex-col transition-all ${
               isDark 
                 ? 'bg-stone-900 border-amber-500/50 text-stone-100' 
                 : 'bg-white border-amber-300 text-stone-900'

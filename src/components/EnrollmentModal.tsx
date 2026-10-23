@@ -52,6 +52,8 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   
   const [submittedOrder, setSubmittedOrder] = useState<EnrollmentOrder | null>(null);
 
+  const [formError, setFormError] = useState<string | null>(null);
+
   if (!isOpen) return null;
 
   const t = UI_TEXT.enrollModal;
@@ -59,8 +61,9 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     if (!studentName.trim() || !whatsapp.trim() || !fatherName.trim()) {
-      alert(
+      setFormError(
         lang === 'ur'
           ? "براہِ کرم طالب علم کا نام، والد کا نام اور واٹس ایپ نمبر درج فرمائیں۔"
           : lang === 'ar'
@@ -113,9 +116,9 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-stone-950/85 backdrop-blur-md animate-in fade-in">
+    <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 md:pt-32 pb-6 px-3 sm:px-5 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
       <div 
-        className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-stone-200"
+        className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 text-stone-200"
         dir={isRtl ? 'rtl' : 'ltr'}
       >
         {/* Pinned Modal Header with Prominent Cancel Button */}
@@ -156,6 +159,14 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
         {!submittedOrder ? (
           <div>
+
+            {/* Validation Error Message */}
+            {formError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-200 text-xs font-semibold flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{formError}</span>
+              </div>
+            )}
 
             {/* Registration Form */}
             <form onSubmit={handleSubmit} className="space-y-4 text-xs sm:text-sm">

@@ -27,8 +27,8 @@ export const LanguageModal: React.FC<LanguageModalProps> = ({
   const isRtl = selected === 'ur' || selected === 'ar';
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-stone-950/85 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="relative w-full max-w-xl bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 border-2 border-amber-500/50 rounded-3xl p-5 sm:p-8 shadow-2xl text-center overflow-hidden text-stone-100 max-h-[95vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 md:pt-32 pb-6 px-3 sm:px-5 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-300">
+      <div className="relative w-full max-w-xl bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 border-2 border-amber-500/50 rounded-3xl p-5 sm:p-8 shadow-2xl text-center overflow-hidden text-stone-100 max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 overflow-y-auto">
         
         {/* Prominent High-Visibility Cancel / Close Button */}
         <button

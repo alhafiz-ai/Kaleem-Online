@@ -52,9 +52,9 @@ export const PoliciesModal: React.FC<PoliciesModalProps> = ({
   const currentText = currentPolicies[activeTab]?.[lang] || currentPolicies[activeTab]?.en || INITIAL_POLICIES[activeTab][lang];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-stone-950/85 backdrop-blur-md animate-in fade-in">
+    <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 md:pt-32 pb-6 px-3 sm:px-5 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
       <div 
-        className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-stone-200"
+        className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 text-stone-200"
         dir={isRtl ? 'rtl' : 'ltr'}
       >
         {/* Pinned Modal Header with High-Visibility Close Button */}

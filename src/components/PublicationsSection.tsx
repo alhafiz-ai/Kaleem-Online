@@ -168,8 +168,8 @@ export const PublicationsSection: React.FC<PublicationsSectionProps> = ({
 
       {/* Reader Modal */}
       {activePub && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-stone-950/85 backdrop-blur-md animate-in fade-in">
-          <div className={`relative w-full max-w-2xl border-2 border-amber-500/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${
+        <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 md:pt-32 pb-6 px-3 sm:px-5 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
+          <div className={`relative w-full max-w-2xl border-2 border-amber-500/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 ${
             isDark ? 'bg-stone-900 text-stone-200' : 'bg-white text-stone-900'
           }`}>
             {/* Pinned Modal Header */}
