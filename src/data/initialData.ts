@@ -1,23 +1,23 @@
-import { Course, StoreItem, LiveClassLink, EnrollmentOrder, CertificateRecord, PaymentGateways, PublicationItem, MediaAdItem, ScholarApp, SiteSettings, NoticeBanner } from '../types';
+import { Course, StoreItem, LiveClassLink, EnrollmentOrder, CertificateRecord, PaymentGateways, PublicationItem, MediaAdItem, ScholarApp, SiteSettings, NoticeBanner, TestimonialItem } from '../types';
 
 export const INITIAL_POLICIES = {
   refund: {
-    en: "30-Day Tuition Satisfaction Guarantee: At Al-Danish Online Islamic Academy, our mission is pure Islamic education with barakah. If any student or parent is dissatisfied with their initial 1-on-1 classes within the first 7 days (or first 3 lessons), they are entitled to a 100% full money-back refund without hassle.\n\n• Refund requests are processed via original gateway (EasyPaisa, JazzCash, Wise, PayPal) within 48 hours.\n• Digital downloadable packages (PDFs and audio files already opened) can be partially credited toward live classes.\n• Free make-up classes are offered if a session is missed due to power outage or teacher emergency.",
-    ur: "30 روزہ اطمینان و فیس واپسی کی ضمانت: ادارہ دانش الاسلامی میں ہمارا نصب العین رضائے الٰہی اور معیاری دینی تعلیم ہے۔ اگر کوئی بھی طالب علم یا سرپرست پہلے 7 دنوں یا ابتدائی 3 اسباق کے دوران مطمئن نہ ہو، تو وہ بلا کسی کٹوتی کے اپنی 100 فیصد فیس واپسی کا مکمل حق رکھتا ہے۔\n\n• فیس واپسی کی درخواست 48 گھنٹوں کے اندر اسی اکاؤنٹ (ایزی پیسہ، جاز کیش، وائز یا پے پال) میں منتقل کر دی جاتی ہے۔\n• استاد کی علالت یا بجلی کی خرابی کی صورت میں متبادل کلاس بالکل مفت فراہم کی جاتی ہے۔",
-    ar: "ضمان الرضا واسترجاع الرسوم خلال 30 يوماً: تهدف الأكاديمية إلى نشر العلم الشرعي ببركة وإخلاص. في حال عدم رغبة الطالب أو ولي أمره في الاستمرار خلال أول 7 أيام (أو أول 3 حصص)، يحق له استرداد كامل المبلغ المدفوع بنسبة 100% دون أي خصم.\n\n• تتم معالجة طلبات الاسترجاع خلال 48 ساعة عبر وسيلة الدفع الأصلية (وايز، باي بال، أو الحسابات المعتمدة).\n• تعويض أي حصة تعذر حضورها بسبب عطل تقني أو طارئ لدى المعلم مجاناً."
+    en: "30-Day Tuition Satisfaction Guarantee: At Kaleem Online Academy, our mission is pure Islamic education with barakah. If any student or parent is dissatisfied with their initial 1-on-1 classes within the first 7 days (or first 3 lessons), they are entitled to a 100% full money-back refund without hassle.\n\n• Refund requests are processed via original gateway (EasyPaisa, JazzCash, Wise, PayPal) within 48 hours.\n• Digital downloadable packages (PDFs and audio files already opened) can be partially credited toward live classes.\n• Free make-up classes are offered if a session is missed due to power outage or teacher emergency.",
+    ur: "30 روزہ اطمینان و فیس واپسی کی ضمانت: کلیم آن لائن اکیڈمی میں ہمارا نصب العین رضائے الٰہی اور معیاری دینی تعلیم ہے۔ اگر کوئی بھی طالب علم یا سرپرست پہلے 7 دنوں یا ابتدائی 3 اسباق کے دوران مطمئن نہ ہو، تو وہ بلا کسی کٹوتی کے اپنی 100 فیصد فیس واپسی کا مکمل حق رکھتا ہے۔\n\n• فیس واپسی کی درخواست 48 گھنٹوں کے اندر اسی اکاؤنٹ (ایزی پیسہ، جاز کیش، وائز یا پے پال) میں منتقل کر دی جاتی ہے۔\n• استاد کی علالت یا بجلی کی خرابی کی صورت میں متبادل کلاس بالکل مفت فراہم کی جاتی ہے۔",
+    ar: "ضمان الرضا واسترجاع الرسوم خلال 30 يوماً: تهدف أكاديمية كليم العالمية للتعليم الإلكتروني إلى نشر العلم الشرعي ببركة وإخلاص. في حال عدم رغبة الطالب أو ولي أمره في الاستمرار خلال أول 7 أيام (أو أول 3 حصص)، يحق له استرداد كامل المبلغ المدفوع بنسبة 100% دون أي خصم.\n\n• تتم معالجة طلبات الاسترجاع خلال 48 ساعة عبر وسيلة الدفع الأصلية (وايز، باي بال، أو الحسابات المعتمدة).\n• تعويض أي حصة تعذر حضورها بسبب عطل تقني أو طارئ لدى المعلم مجاناً."
   },
   privacy: {
-    en: "Privacy & Female Modesty Safeguards: Complete privacy for sisters and young learners. Classes for female students are strictly conducted by certified female scholars (Alimat/Qariyat) with audio-only or fully observed screen-sharing options.\n\n• Student contact numbers and recordings are encrypted and never shared with third parties.\n• Strict ethical Islamic supervision under Mufti Danish Kaleem.",
-    ur: "حجاب و شرعی پردے کے خصوصی ضوابط: طالبات اور خواتین کے لیے مستند باحجاب معلمات اور قاریات کی زیرِ نگرانی خصوصی کلاسز کا انتظام ہے۔ ویڈیو آن کرنا لازمی نہیں، آڈیو یا اسکرین شیئر کے ذریعے مکمل رازداری کے ساتھ تدریس کی جاتی ہے۔\n\n• کسی بھی طالب علم کا ڈیٹا یا واٹس ایپ نمبر کسی غیر متعلقہ فرد کو نہیں دیا جاتا۔",
+    en: "Privacy & Female Modesty Safeguards: Complete privacy for sisters and young learners at Kaleem Online Academy. Classes for female students are strictly conducted by certified female scholars (Alimat/Qariyat) with audio-only or fully observed screen-sharing options.\n\n• Student contact numbers and recordings are encrypted and never shared with third parties.\n• Strict ethical Islamic supervision under Mufti Danish Kaleem.",
+    ur: "حجاب و شرعی پردے کے خصوصی ضوابط: کلیم آن لائن اکیڈمی میں طالبات اور خواتین کے لیے مستند باحجاب معلمات اور قاریات کی زیرِ نگرانی خصوصی کلاسز کا انتظام ہے۔ ویڈیو آن کرنا لازمی نہیں، آڈیو یا اسکرین شیئر کے ذریعے مکمل رازداری کے ساتھ تدریس کی جاتی ہے۔\n\n• کسی بھی طالب علم کا ڈیٹا یا واٹس ایپ نمبر کسی غیر متعلقہ فرد کو نہیں دیا جاتا۔",
     ar: "سياسة الخصوصية والستر الشرعي: توفير معلمات مجازات للأخوات والفتيات الصغيرات مع الالتزام التام بآداب الحجاب الشرعي، والتعليم الصوتي أو عبر الشاشة المشتركة دون إلزام بفتح الكاميرا.\n\n• بيانات الطلاب وأرقام التواصل مشفرة ومحفوظة بسرية تامة تحت إشراف المشرف العام المفتي دانش كليم."
   },
   payment: {
-    en: "Tuition & Fee Policy: Monthly fees are due on the 5th of each calendar month. We accept EasyPaisa, JazzCash, SadaPay, Bank Transfer, and Overseas payments via Wise, PayPal, and Debit/Credit Cards. Installment arrangements and need-based scholarships are available for deserving students.",
+    en: "Tuition & Fee Policy: Monthly fees are due on the 5th of each calendar month. Kaleem Online Academy accepts EasyPaisa, JazzCash, SadaPay, Bank Transfer, and Overseas payments via Wise, PayPal, and Debit/Credit Cards. Installment arrangements and need-based scholarships are available for deserving students.",
     ur: "ماہانہ تعلیمی فیس و ادائیگی ضوابط: ماہانہ فیس ہر ماہ کی 5 تاریخ تک ادا کی جاتی ہے۔ فیس کی منتقلی ایزی پیسہ، جاز کیش، سادا پے، بینک یا بیرونِ ملک سے وائز، پے پال اور کارڈ کے ذریعے ممکن ہے۔ مستحق طلبہ کے لیے خصوصی رعایت اور وظائف کی سہولت بھی موجود ہے۔",
     ar: "ضوابط الرسوم الدراسية وأوقات السداد: تستحق الرسوم الشهرية في الخامس من كل شهر ميلادي. تقبل الأكاديمية التحويل عبر إيزي بيزا، وجاز كاش، والتحويلات الدولية عبر وايز، وباي بال، والبطاقات الائتمانية مع توفر منح دراسية للمتعثرين."
   },
   terms: {
-    en: "Terms of Service & Code of Conduct: Mutual respect, punctual attendance, and dedication to the Holy Quran and sacred sciences are expected from every enrolled student. Students should join the Zoom session 5 minutes prior to class time with required textbooks.",
+    en: "Terms of Service & Code of Conduct: Mutual respect, punctual attendance, and dedication to the Holy Quran and sacred sciences are expected from every enrolled student at Kaleem Online Academy. Students should join the Zoom session 5 minutes prior to class time with required textbooks.",
     ur: "قواعد و ضوابطِ داخلہ: کلاس کے مقررہ وقت کی پابندی، استاد کا احترام اور کتب کا پیشگی مطالعہ ضروری ہے۔ طالب علم کو کلاس شروع ہونے سے 5 منٹ قبل زوم روم میں داخل ہونا چاہیے۔",
     ar: "شروط الخدمة والميثاق الأخلاقي: الالتزام بآداب طلب العلم الشرعي وتوقير المعلمين والمحافظة على مواعيد الحصص المباشرة عبر الزوم، والتواجد قبل بدء الحصة بخمس دقائق."
   }
@@ -25,9 +25,9 @@ export const INITIAL_POLICIES = {
 
 export const INITIAL_SETTINGS: SiteSettings = {
   siteTitle: {
-    ur: "ادارہ دانش برائے تعلیماتِ اسلامیہ و علومِ عربیہ",
-    en: "Al-Danish Online Islamic & Arabic Academy",
-    ar: "أكاديمية الدانش العالمية للعلوم الإسلامية واللغة العربية"
+    ur: "کلیم آن لائن اکیڈمی",
+    en: "Kaleem Online Academy",
+    ar: "أكاديمية كليم العالمية للتعليم الإلكتروني"
   },
   tagline: {
     ur: "مستند علمائے کرام کے زیرِ سرپرستی تجوید، عربی گرائمر، حدیث و فقہ کی مستند 1-on-1 آن لائن تدریس",
@@ -59,7 +59,7 @@ export const INITIAL_SETTINGS: SiteSettings = {
   accentColor: "#d97706",
   adminPassword: "admin123",
   whatsappNumber: "+923001234567",
-  contactEmail: "info@aldanish-academy.edu",
+  contactEmail: "info@kaleem-academy.edu",
   // Advanced Theme & Background Controls
   navbarBg: "#064e3b",
   pageBg: "#0c0a09",
@@ -71,6 +71,7 @@ export const INITIAL_SETTINGS: SiteSettings = {
     hero: true,
     founder: true,
     courses: true,
+    testimonials: true,
     store: true,
     publications: true,
     mediaAds: true,
@@ -89,9 +90,9 @@ export const INITIAL_NOTICE: NoticeBanner = {
     ar: "إعلان عاجل"
   },
   text: {
-    ur: "رمضان المبارک اور نئے سمسٹر کے لیے ون آن ون تجوید اور عربی گرائمر کلاسز کے داخلے جاری ہیں! محدود نشستیں دستیاب ہیں۔",
-    en: "Admissions open for 1-on-1 Live Tajweed & Classical Arabic Grammar for the new semester! Limited slots available.",
-    ar: "فتح باب التسجيل للحلقات الفردية المباشرة في التجويد المتقن وقواعد اللغة العربية للفصل الجديد!"
+    ur: "کلیم آن لائن اکیڈمی میں نئے سمسٹر کے لیے ون آن ون تجوید اور عربی گرائمر کلاسز کے داخلے جاری ہیں! محدود نشستیں دستیاب ہیں۔",
+    en: "Admissions open at Kaleem Online Academy for 1-on-1 Live Tajweed & Classical Arabic Grammar! Limited slots available.",
+    ar: "فتح باب التسجيل في أكاديمية كليم العالمية للحلقات الفردية المباشرة في التجويد المتقن وقواعد اللغة العربية!"
   },
   linkText: {
     ur: "ابھی سیٹ بک کریں",
@@ -443,7 +444,7 @@ export const INITIAL_LIVE_CLASS: LiveClassLink = {
   platform: "Zoom",
   meetingUrl: "https://zoom.us/j/8492048192?pwd=Q0FESTFBU2NlT2xhRElQMWV4UT09",
   meetingId: "849 204 8192",
-  passcode: "DANISH786",
+  passcode: "KALEEM786",
   scheduleText: {
     ur: "روزانہ شام 07:00 بجے تا 08:30 بجے (پاکستانی وقت) - برائے رجسٹرڈ طلبہ",
     en: "Daily 07:00 PM - 08:30 PM PKT (Pakistan Standard Time) - Registered Students",
@@ -515,7 +516,7 @@ export const INITIAL_ORDERS: EnrollmentOrder[] = [
 export const INITIAL_CERTIFICATES: CertificateRecord[] = [
   {
     id: "cert-001",
-    certNumber: "AD-CERT-2026-8841",
+    certNumber: "KOA-CERT-2026-8841",
     enrollmentNo: "ENR-2026-1082",
     studentName: "Muhammad Abdullah",
     fatherName: "Tariq Mahmood",
@@ -523,11 +524,11 @@ export const INITIAL_CERTIFICATES: CertificateRecord[] = [
     grade: "Mumtaz (Distinction - 96%)",
     issueDate: "October 10, 2026",
     issuedBy: "Mufti Danish Kaleem",
-    verificationCode: "VER-AD-8841"
+    verificationCode: "VER-KOA-8841"
   },
   {
     id: "cert-002",
-    certNumber: "AD-CERT-2026-8842",
+    certNumber: "KOA-CERT-2026-8842",
     enrollmentNo: "ENR-2026-1084",
     studentName: "Bilal Ahmad",
     fatherName: "Nazeer Ahmad",
@@ -535,19 +536,180 @@ export const INITIAL_CERTIFICATES: CertificateRecord[] = [
     grade: "Jayyid Jiddan (Very Good - 92%)",
     issueDate: "October 14, 2026",
     issuedBy: "Mufti Danish Kaleem",
-    verificationCode: "VER-AD-8842"
+    verificationCode: "VER-KOA-8842"
   },
   {
     id: "cert-003",
-    certNumber: "AD-CERT-2026-8843",
-    enrollmentNo: "AD-ENR-2026-8841",
+    certNumber: "KOA-CERT-2026-8843",
+    enrollmentNo: "KOA-ENR-2026-8843",
     studentName: "Zainab Bint Khalid",
     fatherName: "Khalid Mansoor",
     courseName: "Classical Arabic Grammar (Nahw & Sarf Level 1)",
     grade: "Mumtaz (Distinction - 94%)",
     issueDate: "October 16, 2026",
     issuedBy: "Mufti Danish Kaleem",
-    verificationCode: "VER-AD-8843"
+    verificationCode: "VER-KOA-8843"
+  }
+];
+
+export const INITIAL_TESTIMONIALS: TestimonialItem[] = [
+  {
+    id: "test-001",
+    studentName: {
+      ur: "محمد عبداللہ طارق",
+      en: "Muhammad Abdullah Tariq",
+      ar: "محمد عبد الله طارق"
+    },
+    location: {
+      ur: "لاہور، پاکستان",
+      en: "Lahore, Pakistan",
+      ar: "لاهور، باكستان"
+    },
+    courseCompleted: {
+      ur: "جامع کورس تجوید و ترتیل القرآن",
+      en: "Comprehensive Tajweed & Quranic Phonetics",
+      ar: "دورة تجويد وترتيل القرآن الكريم"
+    },
+    quote: {
+      ur: "پہلے مجھے حروفِ مستعلیہ اور اخفاء و ادغام کی ادائیگی میں کافی الجھن ہوتی تھی۔ کلیم آن لائن اکیڈمی کی ون آن ون زوم کلاسز میں مفتی دانش کلیم صاحب نے ہر آیت پر براہِ راست مشق کروائی جس سے میری تلاوت میں حیرت انگیز نکھار اور خود اعتمادی پیدا ہوئی۔",
+      en: "Before joining Kaleem Online Academy, I struggled with heavy throat letters and rules of Ikhfa. Through live 1-on-1 Zoom sessions, Mufti Danish Kaleem corrected every verse in real time until my recitation became fluent and accurate.",
+      ar: "قبل التحاقي بأكاديمية كليم العالمية كنت أواجه صعوبة في ضبط مخارج الحروف المفخمة وأحكام الإخفاء. وبفضل الحلقات الفردية المباشرة مع المفتي دانش كليم تحسنت تلاوتي بشكل جذري ومتقن."
+    },
+    outcome: {
+      ur: "3 ماہ میں 96% ممتاز گریڈ کے ساتھ مصدقہ سند حاصل کی اور اب تراویح و فجر میں روانی سے تلاوت کرتے ہیں۔",
+      en: "Graduated in 12 weeks with 96% Mumtaz distinction and certified Sanad (KOA-CERT-2026-8841).",
+      ar: "تخرج خلال 12 أسبوعاً بتقدير ممتاز (96%) ونال شهادة الإتقان الموثقة."
+    },
+    rating: 5,
+    completionDate: "October 2026",
+    certNumber: "KOA-CERT-2026-8841",
+    isVisible: true
+  },
+  {
+    id: "test-002",
+    studentName: {
+      ur: "بلال احمد نذیر",
+      en: "Bilal Ahmad Nazeer",
+      ar: "بلال أحمد نذير"
+    },
+    location: {
+      ur: "برمنگھم، برطانیہ (UK)",
+      en: "Birmingham, United Kingdom",
+      ar: "برمنغهام، المملكة المتحدة"
+    },
+    courseCompleted: {
+      ur: "کلاسیکی و قرآنی عربی گرائمر (نحو و صرف)",
+      en: "Classical & Quranic Arabic Grammar (Nahw & Sarf)",
+      ar: "دورة النحو والصرف لفهم القرآن الكريم"
+    },
+    quote: {
+      ur: "برطانیہ میں ملازمت کے ساتھ عربی سیکھنا مشکل لگتا تھا، لیکن کلیم آن لائن اکیڈمی کے ویک اینڈ ون آن ون شیڈول اور قرآنی آیات پر مبنی ترکیب کے نقشوں نے نحو و صرف کو انتہائی آسان بنا دیا۔ اب میں نماز میں تلاوت سنتے ہوئے براہِ راست مفہوم سمجھتا ہوں۔",
+      en: "Balancing full-time software work in the UK with classical Arabic felt impossible until I enrolled here. The visual syntax trees and direct Quranic verse parsing unlocked Nahw and Sarf so clearly that I now understand Surahs directly during Salah.",
+      ar: "رغم انشغالي بالعمل في بريطانيا، وفرت لي الأكاديمية جدولاً مرناً وخرائط نحوية تطبيقية على الآيات القرآنية مكنتني من فهم التراكيب العربية مباشرة في الصلاة."
+    },
+    outcome: {
+      ur: "4 ماہ میں سورۃ البقرہ اور جزء عمّ کی براہِ راست نحوی ترکیب کرنے کے قابل ہوئے (92% جید جداً)۔",
+      en: "Completed 48 sessions with 92% score; now parses Surah Al-Baqarah & Juz Amma independently.",
+      ar: "أتم 48 حصة بتقدير جيد جداً (92%) وأصبح قادراً على إعراب جزء عمّ وسورة البقرة."
+    },
+    rating: 5,
+    completionDate: "October 2026",
+    certNumber: "KOA-CERT-2026-8842",
+    isVisible: true
+  },
+  {
+    id: "test-003",
+    studentName: {
+      ur: "زینب بنت خالد منصور",
+      en: "Zainab Bint Khalid",
+      ar: "زينب بنت خالد منصور"
+    },
+    location: {
+      ur: "دبئی، متحدہ عرب امارات",
+      en: "Dubai, UAE",
+      ar: "دبي، الإمارات العربية المتحدة"
+    },
+    courseCompleted: {
+      ur: "عربی گرائمر و فہمِ قرآن (خواتین سیکشن)",
+      en: "Classical Arabic Grammar & Tafseer (Sisters Track)",
+      ar: "النحو التطبيقي وتدبر القرآن (قسم الأخوات)"
+    },
+    quote: {
+      ur: "بطورِ خاتون طالبہ میرے لیے شرعی پردے اور آڈیو کلاسز کی مکمل رازداری سب سے اہم تھی۔ کلیم آن لائن اکیڈمی نے نہایت باوقار تعلیمی ماحول، رنگین پی ڈی ایف نوٹس اور ہفتہ وار جائزے فراہم کیے جن سے میرا دیرینہ خواب پورا ہوا۔",
+      en: "As a sister looking for strict privacy and audio-only screen-shared lessons, Kaleem Online Academy exceeded every expectation. Structured PDF workbooks and patient weekly evaluations made classical Arabic deeply rewarding.",
+      ar: "كأخت تبحث عن بيئة تعليمية محافظة تحترم الخصوصية التامة عبر الصوت ومشاركة الشاشة، وجدت في أكاديمية كليم التزاماً راقياً ومذكرات منهجية ملونة سهّلت عليّ دراسة العربية."
+    },
+    outcome: {
+      ur: "لیول 1 میں 94% نمبروں کے ساتھ کامیابی حاصل کی اور مصدقہ سند (KOA-CERT-2026-8843) تفویض ہوئی۔",
+      en: "Achieved 94% Distinction in Level 1 Arabic Syntax with verified Sanad KOA-CERT-2026-8843.",
+      ar: "حصلت على تقدير ممتاز (94%) في المستوى الأول مع شهادة موثقة برقم KOA-CERT-2026-8843."
+    },
+    rating: 5,
+    completionDate: "October 2026",
+    certNumber: "KOA-CERT-2026-8843",
+    isVisible: true
+  },
+  {
+    id: "test-004",
+    studentName: {
+      ur: "ڈاکٹر عمر فاروق صدیقی",
+      en: "Dr. Umar Farooq Siddiqui",
+      ar: "الدكتور عمر فاروق الصديقي"
+    },
+    location: {
+      ur: "ہیوسٹن، امریکہ (USA)",
+      en: "Houston, Texas, USA",
+      ar: "هيوستن، الولايات المتحدة الأمريكية"
+    },
+    courseCompleted: {
+      ur: "فقہ المعاملات و جدید مالیاتی مسائل",
+      en: "Hadith & Contemporary Fiqh Essentials",
+      ar: "دورة الفقه الإسلامي والمعاملات المعاصرة"
+    },
+    quote: {
+      ur: "امریکہ میں مقیم ڈاکٹرز اور پیشہ ور افراد کو زکوٰۃ، اسٹاکس، مارگیج اور حلال سرمایہ کاری کے پیچیدہ شرعی مسائل درپیش ہوتے ہیں۔ مفتی دانش کلیم صاحب نے مستند فقہی دلائل کے ساتھ تمام جدید مالیاتی ابواب نہایت سلیس انداز میں حل کروائے۔",
+      en: "Living in Texas, I needed authentic scholarly clarity on Zakat calculation for 401(k) accounts, equity screening, and medical ethics. Studying classical Fiqh texts 1-on-1 gave me clear, actionable certainty.",
+      ar: "بوصفنا أطباء مقيمين في أمريكا نحتاج إلى تأصيل فقهي دقيق في زكاة الأسهم والمعاملات الطبية والمالية، وقد قدم لي المفتي دانش كليم شرحاً منهجياً موثقاً بالأدلة."
+    },
+    outcome: {
+      ur: "24 انفرادی اسباق مکمل کیے اور مقامی کمیونٹی کے لیے مستند زکوٰۃ گائیڈ ترتیب دینے میں کامیاب ہوئے۔",
+      en: "Completed all 24 1-on-1 Fiqh modules while working hospital shifts in US Central Time.",
+      ar: "أتم 24 حصة فردية بنجاح وفق توقيت أمريكا مع إتقان أحكام الزكاة والمعاملات الحديثة."
+    },
+    rating: 5,
+    completionDate: "September 2026",
+    isVisible: true
+  },
+  {
+    id: "test-005",
+    studentName: {
+      ur: "طلحہ بن سلمان (سرپرست: سلمان رشید)",
+      en: "Talha Bin Salman (Parent: Salman Rasheed)",
+      ar: "طلحة بن سلمان (ولي الأمر: سلمان رشيد)"
+    },
+    location: {
+      ur: "ٹورنٹو، کینیڈا",
+      en: "Toronto, Canada",
+      ar: "تورونتو، كندا"
+    },
+    courseCompleted: {
+      ur: "حفظ القرآن الکریم مع روزانہ منزل و دَور",
+      en: "Quran Hifz & Daily Muraja'ah Mentorship",
+      ar: "برنامج حفظ القرآن الكريم والمراجعة اليومية"
+    },
+    quote: {
+      ur: "میرے 11 سالہ بیٹے کے حفظ میں سب سے بڑا چیلنج پچھلے پاروں کی پختگی (منزل) تھا۔ کلیم آن لائن اکیڈمی کے سبق، سبقی اور منزل کے منظم چارٹ اور ماہانہ پیرنٹ رپورٹ کارڈ سے اس کے حفظ میں زبردست پختگی آئی ہے۔",
+      en: "Keeping our 11-year-old son consistent with Hifz revision in Toronto was tough before joining Kaleem Online Academy. The structured daily Sabaq-Sabqi-Manzil tracker and monthly parent report transformed his retention.",
+      ar: "كانت مراجعة المحفوظ لابني البالغ 11 عاماً في كندا تحدياً كبيراً، ولكن نظام المتابعة اليومي (السبق والسبقي والمنزل) والتقارير الشهرية رسّخ حفظه بإتقان."
+    },
+    outcome: {
+      ur: "8 ماہ میں 7 نئے پارے مکمل پختگی اور متشابہات کی مشق کے ساتھ حفظ کیے۔",
+      en: "Memorized 7 new Juz in 8 months with zero-mistake weekly Manzil assessments.",
+      ar: "أتم حفظ 7 أجزاء جديدة خلال 8 أشهر مع اجتياز اختبارات المراجعة الأسبوعية دون أخطاء."
+    },
+    rating: 5,
+    completionDate: "August 2026",
+    isVisible: true
   }
 ];
 
@@ -577,20 +739,20 @@ export const INITIAL_PAYMENTS: PaymentGateways = {
   },
   bank: {
     bankName: "Meezan Islamic Bank Ltd.",
-    accountTitle: "Al-Danish Islamic Academy",
+    accountTitle: "Kaleem Online Academy",
     accountNumber: "0102030405060708",
     iban: "PK36MEZN0001020304050608",
     branchCode: "0102 (Gulberg Lahore Branch)"
   },
   overseas: {
-    wiseEmail: "danish.academy@wise-pay.com",
+    wiseEmail: "kaleem.academy@wise-pay.com",
     wiseAccountTitle: "Mufti Danish Kaleem",
-    paypalEmail: "payments@aldanish-academy.edu",
-    paypalMeLink: "https://paypal.me/aldanishacademy",
+    paypalEmail: "payments@kaleem-academy.edu",
+    paypalMeLink: "https://paypal.me/kaleemacademy",
     westernUnionName: "Mufti Danish Kaleem (CNIC/Passport: 35201-XXXXXXX-X, Lahore, Pakistan)",
     bankSwift: "MEZNPKKAXXX",
     internationalIban: "PK36MEZN0001020304050608",
-    cardPortalUrl: "https://buy.stripe.com/aldanish_academy_portal",
+    cardPortalUrl: "https://buy.stripe.com/kaleem_academy_portal",
     instructions: {
       ur: "بین الاقوامی طلبہ ویزا/ماسٹر کارڈ، Wise (کم ترین ٹرانسفر فیس)، یا پے پال کے ذریعے فوری ادائیگی کر سکتے ہیں۔ ادائیگی کے بعد رسید کا اسکرین شاٹ واٹس ایپ پر ارسال فرمائیں۔",
       en: "International students can pay seamlessly via Wise (lowest conversion fee), PayPal, Debit/Credit Card (Stripe), or Western Union. An official receipt is automatically generated upon transfer.",
@@ -698,7 +860,7 @@ export const INITIAL_MEDIA_ADS: MediaAdItem[] = [
     },
     description: {
       ur: "ہر عمر کے افراد (بچوں اور بڑوں) کے لیے خصوصی انفرادی اوقات۔ مکمل رازداری کے ساتھ خواتین کے لیے باحجاب معلمات کی سہولت۔",
-      en: "Custom scheduling for kids, professionals, and adults. Qualified female teachers available for sisters in strict accordance with Islamic modesty.",
+      en: "Custom scheduling for kids, professionals, and adults at Kaleem Online Academy. Qualified female teachers available for sisters in strict accordance with Islamic modesty.",
       ar: "أوقات مرنة تناسب الجميع مع توفر معلمات مجازات للأخوات في بيئة تعليمية خاصة ومحافظة."
     },
     ctaText: {

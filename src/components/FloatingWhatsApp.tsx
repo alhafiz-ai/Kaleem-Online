@@ -8,7 +8,7 @@ interface FloatingWhatsAppProps {
 export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ whatsappNumber }) => {
   const cleanNumber = whatsappNumber.replace(/[^0-9]/g, '');
   const defaultMsg = encodeURIComponent(
-    "Assalamu Alaikum Mufti Danish Kaleem Sahib,\n\nI would like to inquire about 1-on-1 Islamic & Arabic classes at Al-Danish Academy."
+    "Assalamu Alaikum Mufti Danish Kaleem Sahib,\n\nI would like to inquire about 1-on-1 Islamic & Arabic classes at Kaleem Online Academy."
   );
 
   return (

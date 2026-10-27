@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StoreItem, Language, SiteSettings, EnrollmentOrder } from '../types';
 import { storage } from '../utils/storage';
+import { downloadPrintableElement } from '../utils/printHelper';
 import { X, CheckCircle, Download, Printer, Phone, ShieldCheck, ShoppingCart, Sparkles, Award } from 'lucide-react';
 
 interface StoreCheckoutModalProps {
@@ -80,15 +81,15 @@ export const StoreCheckoutModal: React.FC<StoreCheckoutModalProps> = ({
   const getWhatsAppMessage = (order: EnrollmentOrder) => {
     if (lang === 'ur') {
       const itemsList = selectedItems.map((item, idx) => `  ${idx + 1}. ${item.title.ur || item.title.en} (PKR ${item.pricePKR})`).join('\n');
-      const text = `السلام علیکم مفتی دانش کلیم صاحب،\n\nمیں نے ادارہ دانش ڈیجیٹل بک اسٹور سے مطالعہ کتب و مواد کا آرڈر بک کیا ہے۔\n\n*رسیدِ خریداری تفصیلات:*\n- رسید نمبر: ${order.id}\n- طالب علم: ${order.studentName}\n- والد کا نام: ${order.fatherName}\n- منتخب کتب و فائلز:\n${itemsList}\n\n*کل قابلِ ادا رقم: PKR ${order.totalAmountPKR}*\n- ادائیگی کا ذریعہ: ${order.paymentMethod.toUpperCase()}\n- واٹس ایپ: ${order.whatsapp}\n\nمیں نے فیس کی منتقلی کی رسید منسلک کر دی ہے۔ براہِ کرم تصدیق فرما کر ڈاؤنلوڈ لنک اور مواد فراہم فرما دیں۔ جزاکم اللہ خیرا!`;
+      const text = `السلام علیکم مفتی دانش کلیم صاحب،\n\nمیں نے کلیم آن لائن اکیڈمی ڈیجیٹل بک اسٹور سے مطالعہ کتب و مواد کا آرڈر بک کیا ہے۔\n\n*رسیدِ خریداری تفصیلات:*\n- رسید نمبر: ${order.id}\n- طالب علم: ${order.studentName}\n- والد کا نام: ${order.fatherName}\n- منتخب کتب و فائلز:\n${itemsList}\n\n*کل قابلِ ادا رقم: PKR ${order.totalAmountPKR}*\n- ادائیگی کا ذریعہ: ${order.paymentMethod.toUpperCase()}\n- واٹس ایپ: ${order.whatsapp}\n\nمیں نے فیس کی منتقلی کی رسید منسلک کر دی ہے۔ براہِ کرم تصدیق فرما کر ڈاؤنلوڈ لنک اور مواد فراہم فرما دیں۔ جزاکم اللہ خیرا!`;
       return encodeURIComponent(text);
     } else if (lang === 'ar') {
       const itemsList = selectedItems.map((item, idx) => `  ${idx + 1}. ${item.title.ar || item.title.en} (PKR ${item.pricePKR})`).join('\n');
-      const text = `السلام عليكم ورحمة الله فضيلة المفتي دانش كليم،\n\nقمت بطلب شراء مطبوعات وملفات رقمية من متجر أكاديمية الدانش.\n\n*بيانات فاتورة الشراء:*\n- رقم الفاتورة: ${order.id}\n- اسم الطالب: ${order.studentName}\n- اسم الوالد: ${order.fatherName}\n- المواد والكتب المطلوبة:\n${itemsList}\n\n*المبلغ الإجمالي: PKR ${order.totalAmountPKR}*\n- طريقة السداد: ${order.paymentMethod.toUpperCase()}\n- رقم الواتساب: ${order.whatsapp}\n\nمرفق لكم إشعار التحويل البنكي، يرجى تزويدي بروابط التحميل المباشرة. بارك الله فيكم وجزاكم خيراً!`;
+      const text = `السلام عليكم ورحمة الله فضيلة المفتي دانش كليم،\n\nقمت بطلب شراء مطبوعات وملفات رقمية من متجر أكاديمية كليم العالمية للتعليم الإلكتروني.\n\n*بيانات فاتورة الشراء:*\n- رقم الفاتورة: ${order.id}\n- اسم الطالب: ${order.studentName}\n- اسم الوالد: ${order.fatherName}\n- المواد والكتب المطلوبة:\n${itemsList}\n\n*المبلغ الإجمالي: PKR ${order.totalAmountPKR}*\n- طريقة السداد: ${order.paymentMethod.toUpperCase()}\n- رقم الواتساب: ${order.whatsapp}\n\nمرفق لكم إشعار التحويل البنكي، يرجى تزويدي بروابط التحميل المباشرة. بارك الله فيكم وجزاكم خيراً!`;
       return encodeURIComponent(text);
     } else {
       const itemsList = selectedItems.map((item, idx) => `  ${idx + 1}. ${item.title.en} (PKR ${item.pricePKR})`).join('\n');
-      const text = `Assalamu Alaikum Mufti Danish Kaleem Sahib,\n\nI have placed an order for study materials on Al-Danish Digital Bookstore.\n\n*Official Invoice Details:*\n- Invoice #: ${order.id}\n- Student Name: ${order.studentName}\n- Father's Name: ${order.fatherName}\n- Purchased Items:\n${itemsList}\n\n*Total Payable: PKR ${order.totalAmountPKR}*\n- Gateway: ${order.paymentMethod.toUpperCase()}\n- WhatsApp: ${order.whatsapp}\n\nI am attaching my payment transaction screenshot. Please confirm my digital downloads and access credentials!`;
+      const text = `Assalamu Alaikum Mufti Danish Kaleem Sahib,\n\nI have placed an order for study materials on Kaleem Online Academy Digital Bookstore.\n\n*Official Invoice Details:*\n- Invoice #: ${order.id}\n- Student Name: ${order.studentName}\n- Father's Name: ${order.fatherName}\n- Purchased Items:\n${itemsList}\n\n*Total Payable: PKR ${order.totalAmountPKR}*\n- Gateway: ${order.paymentMethod.toUpperCase()}\n- WhatsApp: ${order.whatsapp}\n\nI am attaching my payment transaction screenshot. Please confirm my digital downloads and access credentials!`;
       return encodeURIComponent(text);
     }
   };
@@ -430,7 +431,7 @@ export const StoreCheckoutModal: React.FC<StoreCheckoutModalProps> = ({
                 <div className="flex items-center gap-2 border border-amber-300 bg-amber-50/80 px-3 py-1.5 rounded-xl shrink-0">
                   <Award className="w-4 h-4 text-amber-600" />
                   <span className="text-[10px] font-bold text-stone-800">
-                    {lang === 'ur' ? 'مہر و تصدیق: ادارہ دانش الاسلامی' : lang === 'ar' ? 'ختم الاعتماد: إدارة الأكاديمية' : 'Official Academy Seal'}
+                    {lang === 'ur' ? 'مہر و تصدیق: کلیم آن لائن اکیڈمی' : lang === 'ar' ? 'ختم الاعتماد: أكاديمية كليم' : 'Official Kaleem Academy Seal'}
                   </span>
                 </div>
               </div>
@@ -454,17 +455,27 @@ export const StoreCheckoutModal: React.FC<StoreCheckoutModalProps> = ({
                 </span>
               </a>
 
-              <div className="flex gap-3 justify-center">
+              <div className="flex flex-wrap gap-2.5 justify-center">
                 <button
+                  type="button"
+                  onClick={() => downloadPrintableElement('printable-invoice', `${completedOrder.id}.html`, `${completedOrder.studentName} — Bookstore Receipt`)}
+                  className="px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 text-xs font-semibold flex items-center gap-2 border border-amber-500/40 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{lang === 'ur' ? 'ڈاؤنلوڈ (.html)' : lang === 'ar' ? 'تحميل الفاتورة' : 'Download (.html)'}</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => window.print()}
                   className="px-5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-semibold flex items-center gap-2 border border-stone-700 cursor-pointer"
                 >
                   <Printer className="w-4 h-4 text-amber-400" />
                   <span>
-                    {lang === 'ur' ? 'رسید پرنٹ یا محفوظ کریں' : lang === 'ar' ? 'طباعة / حفظ الفاتورة' : 'Print / Save Receipt'}
+                    {lang === 'ur' ? 'رسید پرنٹ کریں' : lang === 'ar' ? 'طباعة الفاتورة' : 'Print Receipt'}
                   </span>
                 </button>
                 <button
+                  type="button"
                   onClick={onClose}
                   className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold cursor-pointer font-kufi"
                 >

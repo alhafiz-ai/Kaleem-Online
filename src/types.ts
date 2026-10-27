@@ -34,6 +34,7 @@ export interface SiteSettings {
     hero: boolean;
     founder: boolean;
     courses: boolean;
+    testimonials: boolean;
     store: boolean;
     publications: boolean;
     mediaAds: boolean;
@@ -131,6 +132,19 @@ export interface CertificateRecord {
   issueDate: string;
   issuedBy: string;
   verificationCode: string;
+}
+
+export interface TestimonialItem {
+  id: string;
+  studentName: LocalizedString;
+  location: LocalizedString;
+  courseCompleted: LocalizedString;
+  quote: LocalizedString;
+  outcome: LocalizedString;
+  rating: number;
+  completionDate: string;
+  certNumber?: string;
+  isVisible: boolean;
 }
 
 export interface PaymentGateways {

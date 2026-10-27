@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Language, EnrollmentOrder, CertificateRecord, ThemeMode, SiteSettings } from '../types';
 import { storage } from '../utils/storage';
+import { downloadPrintableElement, openExternalSafe } from '../utils/printHelper';
 import { 
   Search, 
   GraduationCap, 
@@ -8,10 +9,10 @@ import {
   Clock, 
   AlertCircle, 
   Printer, 
+  Download,
   Award, 
   MessageCircle, 
-  Sparkles,
-  BookOpen
+  Loader2
 } from 'lucide-react';
 
 interface StudentPortalSectionProps {
@@ -33,40 +34,28 @@ export const StudentPortalSection: React.FC<StudentPortalSectionProps> = ({
   const [hasSearched, setHasSearched] = useState(false);
   const [matchedOrder, setMatchedOrder] = useState<EnrollmentOrder | null>(null);
   const [matchedCert, setMatchedCert] = useState<CertificateRecord | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   const isDark = theme === 'dark';
   const isRtl = lang === 'ur' || lang === 'ar';
 
-  const handleSearch = (queryOverride?: string) => {
-    const q = (queryOverride !== undefined ? queryOverride : searchQuery).trim().toLowerCase();
-    if (!q) return;
+  const handleSearch = async (queryOverride?: string) => {
+    const raw = (queryOverride !== undefined ? queryOverride : searchQuery).trim();
+    if (!raw) return;
 
     if (queryOverride !== undefined) {
       setSearchQuery(queryOverride);
     }
     setHasSearched(true);
+    setIsSearching(true);
 
-    const orders = storage.getOrders();
-    const certs = storage.getCertificates();
-
-    // 1. Search in orders by ID (enrollment no), studentName, or whatsapp
-    const foundOrder = orders.find(o => 
-      o.id.toLowerCase() === q ||
-      o.studentName.toLowerCase().includes(q) ||
-      o.whatsapp.replace(/[^0-9]/g, '').includes(q.replace(/[^0-9]/g, ''))
-    );
-
-    // 2. Search in certificates by enrollmentNo, certNumber, studentName, or verificationCode
-    const foundCert = certs.find(c => 
-      (c.enrollmentNo && c.enrollmentNo.toLowerCase() === q) ||
-      c.certNumber.toLowerCase() === q ||
-      c.verificationCode.toLowerCase() === q ||
-      (foundOrder && c.studentName.toLowerCase() === foundOrder.studentName.toLowerCase()) ||
-      c.studentName.toLowerCase().includes(q)
-    );
-
-    setMatchedOrder(foundOrder || null);
-    setMatchedCert(foundCert || null);
+    try {
+      const { cert, order } = await storage.verifyCertificateAndOrder(raw);
+      setMatchedOrder(order);
+      setMatchedCert(cert);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleQuickSearch = (query: string) => {
@@ -78,14 +67,20 @@ export const StudentPortalSection: React.FC<StudentPortalSectionProps> = ({
     window.print();
   };
 
+  const handleDownloadSlip = () => {
+    const idLabel = matchedOrder?.id || matchedCert?.certNumber || 'student-slip';
+    const nameLabel = matchedOrder?.studentName || matchedCert?.studentName || 'Student';
+    downloadPrintableElement('printable-student-slip', `${idLabel}.html`, `${nameLabel} — Kaleem Online Academy Slip`);
+  };
+
   const handleWhatsAppInquiry = (orderId?: string) => {
     const cleanNumber = settings.whatsappNumber.replace(/[^0-9]/g, '');
     const text = lang === 'ur'
-      ? `السلام علیکم مفتی صاحب! میں اپنے داخلہ نمبر (${orderId || searchQuery}) کے متعلق معلومات اور کلاس کا لنک حاصل کرنا چاہتا ہوں۔`
+      ? `السلام علیکم مفتی صاحب! میں کلیم آن لائن اکیڈمی میں اپنے داخلہ نمبر (${orderId || searchQuery}) کے متعلق معلومات اور کلاس کا لنک حاصل کرنا چاہتا ہوں۔`
       : lang === 'ar'
-      ? `السلام عليكم يا فضيلة المفتي، أستفسر عن حالة تسجيل ورقم القيد: (${orderId || searchQuery}).`
-      : `Assalamu Alaikum Mufti Danish, I am inquiring about my enrollment status for ID: (${orderId || searchQuery}).`;
-    window.open(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`, '_blank');
+      ? `السلام عليكم يا فضيلة المفتي، أستفسر عن حالة التسجيل ورقم القيد في أكاديمية كليم العالمية: (${orderId || searchQuery}).`
+      : `Assalamu Alaikum Mufti Danish, I am inquiring about my Kaleem Online Academy enrollment status for ID: (${orderId || searchQuery}).`;
+    openExternalSafe(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`);
   };
 
   return (
@@ -171,9 +166,10 @@ export const StudentPortalSection: React.FC<StudentPortalSectionProps> = ({
 
             <button
               type="submit"
-              className="w-full sm:w-auto px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold font-clear-title text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-stone-950 shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              disabled={isSearching}
+              className="w-full sm:w-auto px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold font-clear-title text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 disabled:opacity-60 text-stone-950 shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
-              <Search className="w-4 h-4 text-stone-950" />
+              {isSearching ? <Loader2 className="w-4 h-4 text-stone-950 animate-spin" /> : <Search className="w-4 h-4 text-stone-950" />}
               <span>{lang === 'ur' ? 'اسٹیٹس تلاش کریں' : lang === 'ar' ? 'بحث عن القيد' : 'Search Status'}</span>
             </button>
           </form>
@@ -181,8 +177,15 @@ export const StudentPortalSection: React.FC<StudentPortalSectionProps> = ({
           {/* Quick Demo Test Chips - Mobile Wrap Cleanly */}
           <div className="mt-3.5 pt-3 border-t border-stone-200 dark:border-stone-800 flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs">
             <span className="text-stone-500 dark:text-stone-400 font-semibold shrink-0">
-              {lang === 'ur' ? 'تجرباتی داخلہ نمبرز:' : lang === 'ar' ? 'أرقام قيد تجريبية:' : 'Try Sample IDs:'}
+              {lang === 'ur' ? 'تجرباتی داخلہ و سند نمبرز:' : lang === 'ar' ? 'أرقام قيد وشهادات تجريبية:' : 'Try Sample IDs:'}
             </span>
+            <button
+              type="button"
+              onClick={() => handleQuickSearch('KOA-CERT-2026-8841')}
+              className="px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 dark:bg-amber-950/60 dark:text-amber-300 dark:border dark:border-amber-800 font-mono text-[10px] sm:text-[11px] font-bold transition-colors cursor-pointer"
+            >
+              KOA-CERT-2026-8841
+            </button>
             <button
               type="button"
               onClick={() => handleQuickSearch('ENR-2026-1082')}
@@ -193,7 +196,7 @@ export const StudentPortalSection: React.FC<StudentPortalSectionProps> = ({
             <button
               type="button"
               onClick={() => handleQuickSearch('ORD-2026-1083')}
-              className="px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 dark:border dark:border-amber-800 font-mono text-[10px] sm:text-[11px] font-bold transition-colors cursor-pointer"
+              className="px-2 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-300 dark:border dark:border-stone-700 font-mono text-[10px] sm:text-[11px] font-bold transition-colors cursor-pointer"
             >
               ORD-2026-1083 (Pending)
             </button>
@@ -212,7 +215,9 @@ export const StudentPortalSection: React.FC<StudentPortalSectionProps> = ({
           <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-bottom-2 w-full">
             
             {matchedOrder || matchedCert ? (
-              <div className={`rounded-2xl sm:rounded-3xl border-2 p-3.5 sm:p-7 shadow-2xl relative w-full overflow-hidden ${
+              <div
+                id="printable-student-slip"
+                className={`rounded-2xl sm:rounded-3xl border-2 p-3.5 sm:p-7 shadow-2xl relative w-full overflow-hidden ${
                 isDark 
                   ? 'bg-stone-950 border-amber-500/40' 
                   : 'bg-white border-amber-300'
@@ -222,11 +227,11 @@ export const StudentPortalSection: React.FC<StudentPortalSectionProps> = ({
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 sm:pb-5 border-b border-stone-200 dark:border-stone-800 w-full">
                   <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 w-full sm:w-auto">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-900 text-amber-300 border border-amber-400 flex items-center justify-center font-amiri text-xl sm:text-2xl font-bold shadow-inner shrink-0">
-                      د
+                      ك
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-amber-500 font-bold block truncate">
-                        Enrollment &bull; {matchedOrder?.id || matchedCert?.enrollmentNo || matchedCert?.certNumber}
+                      <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-amber-500 font-bold block truncate tabular-nums">
+                        {matchedCert ? 'Sanad & Enrollment' : 'Enrollment'} &bull; {matchedOrder?.id || matchedCert?.enrollmentNo || matchedCert?.certNumber}
                       </span>
                       <h3 className="text-base sm:text-2xl font-extrabold font-clear-title text-stone-900 dark:text-stone-100 truncate">
                         {matchedOrder?.studentName || matchedCert?.studentName}
@@ -237,15 +242,22 @@ export const StudentPortalSection: React.FC<StudentPortalSectionProps> = ({
                   {/* Status Badge */}
                   <div className="self-start sm:self-auto shrink-0">
                     {matchedOrder?.paymentStatus === 'Approved' || matchedCert ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-500 shadow-sm">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-500 shadow-sm">
                         <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                         <span>
                           {lang === 'ur' ? 'داخلہ معتمد و منظور شدہ' : lang === 'ar' ? 'القيد معتمد ومؤكد رسمياً' : 'Admission Confirmed'}
                         </span>
                       </span>
+                    ) : matchedOrder?.paymentStatus === 'Declined' ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-500 shadow-sm">
+                        <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                        <span>
+                          {lang === 'ur' ? 'غیر فعال / رجسٹرار سے رابطہ کریں' : lang === 'ar' ? 'غير مفعل — راجع الإدارة' : 'Declined / Contact Registrar'}
+                        </span>
+                      </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-500 shadow-sm">
-                        <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-400 animate-pulse shrink-0" />
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-500 shadow-sm">
+                        <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                         <span>
                           {lang === 'ur' ? 'زیرِ غور — فیس کی تصدیق جاری' : lang === 'ar' ? 'قيد المراجعة والتحقق' : 'Under Review'}
                         </span>
@@ -432,6 +444,16 @@ export const StudentPortalSection: React.FC<StudentPortalSectionProps> = ({
                     >
                       <Printer className="w-4 h-4 text-amber-500 shrink-0" />
                       <span>{lang === 'ur' ? 'داخلہ رسید پرنٹ کریں' : lang === 'ar' ? 'طباعة بطاقة القبول' : 'Print Slip'}</span>
+                    </button>
+
+                    {/* Download HTML Slip */}
+                    <button
+                      type="button"
+                      onClick={handleDownloadSlip}
+                      className="w-full xs:w-auto px-3.5 sm:px-4 py-3 rounded-xl sm:rounded-2xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 border border-stone-300 dark:border-stone-700 transition-colors cursor-pointer"
+                    >
+                      <Download className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span>{lang === 'ur' ? 'ڈاؤنلوڈ (.html)' : lang === 'ar' ? 'تحميل البطاقة' : 'Download (.html)'}</span>
                     </button>
                   </div>
 

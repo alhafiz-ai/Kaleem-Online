@@ -1,5 +1,6 @@
 import React from 'react';
 import { Course, Language, ThemeMode, SiteSettings } from '../types';
+import { openExternalSafe } from '../utils/printHelper';
 import { 
   X, 
   BookOpen, 
@@ -48,7 +49,7 @@ export const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
       : lang === 'ar'
       ? `السلام عليكم ورحمة الله يا فضيلة المفتي، أود الاستفسار عن تفاصيل دورة "${courseTitle}" ومواعيد الحصص الفردية المباشرة.`
       : `Assalamu Alaikum Mufti Danish, I would like to inquire about the syllabus and 1-on-1 schedule for the course: "${courseTitle}".`;
-    window.open(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+    openExternalSafe(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(msg)}`);
   };
 
   const categoryLabels: Record<string, { ur: string; ar: string; en: string }> = {
@@ -225,10 +226,10 @@ export const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
               <ShieldCheck className="w-4 h-4" />
               <span>
                 {lang === 'ur' 
-                  ? 'ادارہ دانش کی تعلیمی خصوصیات و ضمانتیں:' 
+                  ? 'کلیم آن لائن اکیڈمی کی تعلیمی خصوصیات و ضمانتیں:' 
                   : lang === 'ar' 
-                  ? 'مزايا وضمانات أكاديمية الدانش:' 
-                  : 'Academy Guarantees & Features:'}
+                  ? 'مزايا وضمانات أكاديمية كليم العالمية:' 
+                  : 'Kaleem Online Academy Guarantees & Features:'}
               </span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-xs leading-relaxed opacity-90">

@@ -6,5 +6,9 @@ docs/
 coverage/
 .DS_Store
 *.log
+*.tsbuildinfo
+bun.lock
+bun.lockb
+package-lock.json
 .env*
 !.env.example

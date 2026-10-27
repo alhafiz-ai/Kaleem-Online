@@ -40,7 +40,7 @@ export const PublicationsSection: React.FC<PublicationsSectionProps> = ({
     // Default simulated instant download of research paper treatise
     const element = document.createElement("a");
     const file = new Blob([
-      `AL-DANISH ONLINE ISLAMIC & ARABIC ACADEMY\nResearch Treatise / رسالة علمية وبحث شرعي\nTitle: ${pub.title[lang] || pub.title.en}\nAuthor: ${pub.author[lang] || pub.author.en}\nCategory: ${pub.category[lang] || pub.category.en}\nPages: ${pub.pages}\n\nSummary / خلاصۂ تحقیق:\n${pub.summary[lang] || pub.summary.en}\n\nArabic Excerpt / النص الأصلي:\n${pub.fullExcerpt}\n\nDirector: Mufti Danish Kaleem\nOfficial Website: https://aldanish-academy.edu`
+      `KALEEM ONLINE ACADEMY\nResearch Treatise / رسالة علمية وبحث شرعي\nTitle: ${pub.title[lang] || pub.title.en}\nAuthor: ${pub.author[lang] || pub.author.en}\nCategory: ${pub.category[lang] || pub.category.en}\nPages: ${pub.pages}\n\nSummary / خلاصۂ تحقیق:\n${pub.summary[lang] || pub.summary.en}\n\nArabic Excerpt / النص الأصلي:\n${pub.fullExcerpt}\n\nDirector: Mufti Danish Kaleem\nOfficial Website: https://kaleem-academy.edu`
     ], { type: 'text/plain;charset=utf-8' });
     element.href = URL.createObjectURL(file);
     element.download = pub.downloadFilename.replace('.pdf', '.txt');

@@ -5,13 +5,15 @@ export const UI_TEXT = {
   nav: {
     home: { ur: "صفحۂ اول", en: "Home", ar: "الرئيسية" },
     founder: { ur: "تعارفِ بانی", en: "Founder Profile", ar: "سيرة المؤسس" },
-    courses: { ur: "کورسز و داخلہ", en: "Courses & Enrollment", ar: "الدورات والتسجيل" },
+    courses: { ur: "کورسز و داخلہ", en: "Courses", ar: "الدورات" },
+    testimonials: { ur: "آرائے طلبہ", en: "Testimonials", ar: "آراء الطلاب" },
     store: { ur: "ڈیجیٹل بک اسٹور", en: "Digital Store", ar: "المتجر الرقمي" },
-    publications: { ur: "کتب و مقالات", en: "Publications & Fatawa", ar: "المؤلفات والبحوث" },
+    publications: { ur: "کتب و مقالات", en: "Publications", ar: "المؤلفات والبحوث" },
     mediaAds: { ur: "اعلانات و میڈیا", en: "Media & Announcements", ar: "الإعلانات والميديا" },
     scholarApps: { ur: "تحقیقی ایپس", en: "Scholar Tools", ar: "أدوات الباحث" },
     payments: { ur: "طریقۂ ادائیگی", en: "Payments & Fees", ar: "طرق الدفع" },
     policies: { ur: "قوانین و ضوابط", en: "Policies", ar: "السياسات والضوابط" },
+    verifySanad: { ur: "تصدیقِ سند", en: "Verify Sanad", ar: "التحقق من السند" },
     adminPortal: { ur: "ایڈمن پینل 🔐", en: "Admin Panel 🔐", ar: "لوحة التحكم 🔐" },
     liveClassBadge: { ur: "لائیو زوم کلاس", en: "Live Zoom Class", ar: "الحصة المباشرة" },
     switchLang: { ur: "زبان تبدیل کریں", en: "Language", ar: "اللغة" }
@@ -53,6 +55,15 @@ export const UI_TEXT = {
     featuresLabel: { ur: "کورس کی خصوصیات:", en: "Course Highlights:", ar: "مميزات الدورة:" },
     durationLabel: { ur: "مدت:", en: "Duration:", ar: "المدة:" },
     instructorLabel: { ur: "استاد:", en: "Instructor:", ar: "المدرس:" }
+  },
+
+  // Student Testimonials
+  testimonials: {
+    sectionTitle: { ur: "طلبہ کی کامیابی کی داستانیں و تاثرات", en: "Student Testimonials & Success Stories", ar: "قصص نجاح الطلاب وشهاداتهم" },
+    sectionSubtitle: { ur: "کلیم آن لائن اکیڈمی کے فارغ التحصیل ملکی و بین الاقوامی طلبہ کے مستند تاثرات اور تعلیمی نتائج", en: "Verified learning outcomes from Kaleem Online Academy graduates across 25+ countries", ar: "تجارب موثقة ونتائج ملموسة لخريجي أكاديمية كليم العالمية للتعليم الإلكتروني حول العالم" },
+    outcomeLabel: { ur: "حاصل شدہ تعلیمی نتیجہ:", en: "Documented Learning Outcome:", ar: "النتيجة العلمية المحققة:" },
+    verifyBtn: { ur: "سند کی تصدیق کریں", en: "Verify Sanad", ar: "تحقق من السند" },
+    enrollCta: { ur: "اپنی ون آن ون کلاس بُک کریں", en: "Start Your 1-on-1 Journey", ar: "ابدأ رحلتك التعليمية الآن" }
   },
 
   // Store
@@ -123,7 +134,7 @@ export const UI_TEXT = {
 
   // Footer & Policies
   footer: {
-    rights: { ur: "تمام حقوق ادارہ دانش الاسلامی کے پاس محفوظ ہیں © 2026", en: "All Rights Reserved © 2026 Al-Danish Islamic & Arabic Academy", ar: "جميع الحقوق محفوظة لأكاديمية الدانش الإسلامية © 2026" },
+    rights: { ur: "تمام حقوق کلیم آن لائن اکیڈمی کے پاس محفوظ ہیں © 2026", en: "All Rights Reserved © 2026 Kaleem Online Academy", ar: "جميع الحقوق محفوظة لأكاديمية كليم العالمية للتعليم الإلكتروني © 2026" },
     terms: { ur: "شرائط و ضوابط", en: "Terms of Service", ar: "الشروط والأحكام" },
     privacy: { ur: "رازداری کی پالیسی", en: "Privacy Policy", ar: "سياسة الخصوصية" },
     refund: { ur: "واپسی کی پالیسی (Refund Policy)", en: "Refund Policy", ar: "سياسة الاسترجاع" },

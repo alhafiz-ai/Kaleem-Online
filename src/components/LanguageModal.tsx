@@ -66,10 +66,10 @@ export const LanguageModal: React.FC<LanguageModalProps> = ({
             <span>اہلاً وسہلاً و مرحبا &bull; Warm Islamic Welcome</span>
           </span>
           <h2 className="text-xl sm:text-2xl font-extrabold font-kufi text-stone-100 pt-1">
-            Al-Danish Online Islamic & Arabic Academy
+            Kaleem Online Academy
           </h2>
           <p className="font-amiri text-base sm:text-lg text-amber-400 font-bold">
-            ادارہ دانش برائے تعلیماتِ اسلامیہ و علومِ عربیہ میں خوش آمدید
+            کلیم آن لائن اکیڈمی میں خوش آمدید
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export const LanguageModal: React.FC<LanguageModalProps> = ({
               <span className="text-xs">🇵🇰</span>
             </div>
             <p>
-              <strong>السلام علیکم ورحمۃ اللہ وبرکاتہ!</strong> ہم آپ کو ادارہ دانش آن لائن اکیڈمی کے بابرکت تعلیمی پلیٹ فارم پر تہہِ دل سے خوش آمدید کہتے ہیں۔ مفتی دانش کلیم صاحب کی زیرِ نگرانی قرآن و سنت، تجوید اور عربی گرائمر کی مستند تدریس کا آغاز فرمائیے۔
+              <strong>السلام علیکم ورحمۃ اللہ وبرکاتہ!</strong> ہم آپ کو کلیم آن لائن اکیڈمی کے بابرکت تعلیمی پلیٹ فارم پر تہہِ دل سے خوش آمدید کہتے ہیں۔ مفتی دانش کلیم صاحب کی زیرِ نگرانی قرآن و سنت، تجوید اور عربی گرائمر کی مستند تدریس کا آغاز فرمائیے۔
             </p>
           </div>
 
@@ -94,7 +94,7 @@ export const LanguageModal: React.FC<LanguageModalProps> = ({
               <span className="text-xs">🇸🇦</span>
             </div>
             <p className="text-sm sm:text-base">
-              <strong>أهلاً وسهلاً ومرحباً بكم</strong> في رحاب أكاديمية الدانش العالمية للعلوم الإسلامية واللغة العربية، صرح العلم والإيمان لتعليم التجويد والنحو والصرف بإشراف فضيلة المفتي دانش كليم.
+              <strong>أهلاً وسهلاً ومرحباً بكم</strong> في رحاب أكاديمية كليم العالمية للتعليم الإلكتروني، صرح العلم والإيمان لتعليم التجويد والنحو والصرف بإشراف فضيلة المفتي دانش كليم.
             </p>
           </div>
 

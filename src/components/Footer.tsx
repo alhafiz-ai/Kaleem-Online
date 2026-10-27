@@ -44,7 +44,7 @@ export const Footer: React.FC<FooterProps> = ({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${settings.activeSections.policies !== false ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-10 mb-12`}>
           
           {/* Col 1: Academy & Founder */}
           <div className="space-y-4">
@@ -107,6 +107,7 @@ export const Footer: React.FC<FooterProps> = ({
           </div>
 
           {/* Col 3: Legal & Verification */}
+          {settings.activeSections.policies !== false && (
           <div className="space-y-4">
             <h4 className="font-bold text-amber-300 text-sm uppercase tracking-wider">
               Legal & Policies
@@ -115,7 +116,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <button
                   onClick={() => onOpenPolicy('refund')}
-                  className="hover:text-amber-300 transition-colors text-left"
+                  className="hover:text-amber-300 transition-colors text-left cursor-pointer"
                 >
                   Tuition Fee & 7-Day Refund Policy
                 </button>
@@ -123,7 +124,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <button
                   onClick={() => onOpenPolicy('privacy')}
-                  className="hover:text-amber-300 transition-colors text-left"
+                  className="hover:text-amber-300 transition-colors text-left cursor-pointer"
                 >
                   Student Data & Privacy Protection
                 </button>
@@ -131,7 +132,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <button
                   onClick={() => onOpenPolicy('payment')}
-                  className="hover:text-amber-300 transition-colors text-left"
+                  className="hover:text-amber-300 transition-colors text-left cursor-pointer"
                 >
                   Payment Methods & Verification
                 </button>
@@ -139,13 +140,14 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <button
                   onClick={() => onOpenPolicy('terms')}
-                  className="hover:text-amber-300 transition-colors text-left"
+                  className="hover:text-amber-300 transition-colors text-left cursor-pointer"
                 >
                   Code of Scholarly Conduct
                 </button>
               </li>
             </ul>
           </div>
+          )}
 
           {/* Col 4: Contact & Admin */}
           <div className="space-y-4">
@@ -186,6 +188,7 @@ export const Footer: React.FC<FooterProps> = ({
           <p className="text-center sm:text-left">
             {t.rights[lang]}
           </p>
+          {settings.activeSections.policies !== false && (
           <div className="flex items-center gap-4">
             <button onClick={() => onOpenPolicy('terms')} className="hover:text-amber-300 cursor-pointer">
               {t.terms[lang]}
@@ -199,6 +202,7 @@ export const Footer: React.FC<FooterProps> = ({
               {t.refund[lang]}
             </button>
           </div>
+          )}
         </div>
 
       </div>

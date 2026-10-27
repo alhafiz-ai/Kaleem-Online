@@ -171,12 +171,15 @@ html[lang="ar"] .font-academy-brand {
   min-width: 44px;
 }
 
-/* Certificate Print Styles */
+/* Certificate, Student Slip & Invoice Print Styles */
 @media print {
   body * {
     visibility: hidden;
   }
-  #printable-certificate, #printable-certificate * {
+  #printable-certificate, #printable-certificate *,
+  #printable-invoice, #printable-invoice *,
+  #printable-admin-invoice, #printable-admin-invoice *,
+  #printable-student-slip, #printable-student-slip * {
     visibility: visible;
   }
   #printable-certificate {
@@ -184,19 +187,17 @@ html[lang="ar"] .font-academy-brand {
     left: 0;
     top: 0;
     width: 100vw;
-    height: 100vh;
     margin: 0;
     padding: 20px;
   }
-  #printable-invoice, #printable-invoice * {
-    visibility: visible;
-  }
-  #printable-invoice {
+  #printable-invoice,
+  #printable-admin-invoice,
+  #printable-student-slip {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     margin: 0;
-    padding: 10px;
+    padding: 12px;
   }
 }

@@ -1,0 +1,471 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net (Default Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Hardened Global Primitives ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Zero-lookup verified primary director check (safe for list & single-doc operations)
+    function isPrimaryAdmin() {
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'kaleemhafiz47@gmail.com';
+    }
+
+    // Full admin check using verified email or trusted /admins/{uid} document lookup (single-doc operations only)
+    function isAdmin() {
+      return isPrimaryAdmin()
+        || (isSignedIn()
+            && request.auth.token.email_verified == true
+            && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function isValidLocalized(loc, maxLen) {
+      return loc is map
+        && loc.keys().hasAll(['ur', 'en', 'ar'])
+        && loc.keys().hasOnly(['ur', 'en', 'ar'])
+        && loc.ur is string && loc.ur.size() <= maxLen
+        && loc.en is string && loc.en.size() <= maxLen
+        && loc.ar is string && loc.ar.size() <= maxLen;
+    }
+
+    // --- Validation Blueprints (Anti-Update-Gap) ---
+    function isValidAdminRole(data) {
+      return data is map
+        && data.keys().hasAll(['email', 'addedBy', 'createdAt'])
+        && data.keys().hasOnly(['email', 'addedBy', 'createdAt'])
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 200
+        && data.addedBy is string && data.addedBy.size() >= 1 && data.addedBy.size() <= 128
+        && data.addedBy == request.auth.uid
+        && data.createdAt is timestamp;
+    }
+
+    function isValidSiteConfig(data) {
+      return data is map
+        && data.keys().hasAll(['settings', 'notice', 'liveClass', 'payments', 'updatedBy', 'updatedAt'])
+        && data.keys().hasOnly(['settings', 'notice', 'liveClass', 'payments', 'updatedBy', 'updatedAt'])
+        && data.settings is map
+        && !('adminPassword' in data.settings)
+        && data.settings.keys().hasOnly([
+            'siteTitle', 'tagline', 'founderName', 'founderTitle', 'founderBio',
+            'founderImage', 'founderDegrees', 'founderExperience', 'primaryColor',
+            'accentColor', 'whatsappNumber', 'contactEmail', 'activeSections',
+            'navbarBg', 'pageBg', 'cardBg', 'cardBorder', 'textColor', 'policies'
+          ])
+        && data.notice is map
+        && data.notice.keys().hasOnly(['enabled', 'text', 'badge', 'linkText', 'linkUrl', 'urgentLevel'])
+        && data.liveClass is map
+        && data.liveClass.keys().hasOnly(['platform', 'meetingUrl', 'meetingId', 'passcode', 'scheduleText', 'accessRestriction', 'lastUpdated'])
+        && data.payments is map
+        && data.payments.keys().hasOnly(['easypaisa', 'jazzcash', 'sadapay', 'bank', 'overseas'])
+        && data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 128
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCourse(data) {
+      return data is map
+        && data.keys().hasAll(['id', 'title', 'category', 'description', 'feeMonthlyPKR', 'feeUSD', 'duration', 'classesPerWeek', 'instructor', 'level', 'features', 'isVisible', 'updatedBy', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'title', 'category', 'description', 'feeMonthlyPKR', 'feeUSD', 'duration', 'classesPerWeek', 'instructor', 'level', 'features', 'timing', 'isVisible', 'isPopular', 'updatedBy', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidLocalized(data.title, 300)
+        && data.category in ['tajweed', 'arabic', 'hadith_fiqh', 'tafseer', 'fatawa', 'hifz', 'qirat']
+        && isValidLocalized(data.description, 4000)
+        && data.feeMonthlyPKR is number && data.feeMonthlyPKR >= 0 && data.feeMonthlyPKR <= 1000000
+        && data.feeUSD is number && data.feeUSD >= 0 && data.feeUSD <= 50000
+        && isValidLocalized(data.duration, 200)
+        && data.classesPerWeek is number && data.classesPerWeek >= 1 && data.classesPerWeek <= 7
+        && isValidLocalized(data.instructor, 200)
+        && data.level in ['Beginner', 'Intermediate', 'Advanced', 'All Levels']
+        && data.features is list && data.features.size() <= 30
+        && (data.features.size() == 0 || (data.features[0] is string && data.features[0].size() <= 500))
+        && (!('timing' in data) || isValidLocalized(data.timing, 300))
+        && data.isVisible is bool
+        && (!('isPopular' in data) || data.isPopular is bool)
+        && data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 128
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidStoreItem(data) {
+      return data is map
+        && data.keys().hasAll(['id', 'title', 'category', 'pricePKR', 'priceUSD', 'description', 'includes', 'formatBadge', 'isVisible', 'updatedBy', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'title', 'category', 'pricePKR', 'priceUSD', 'description', 'includes', 'formatBadge', 'badgeColor', 'isVisible', 'fileName', 'fileSize', 'fileData', 'updatedBy', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidLocalized(data.title, 300)
+        && data.category in ['package', 'video', 'pdf', 'audio', 'session']
+        && data.pricePKR is number && data.pricePKR >= 0 && data.pricePKR <= 5000000
+        && data.priceUSD is number && data.priceUSD >= 0 && data.priceUSD <= 50000
+        && isValidLocalized(data.description, 4000)
+        && data.includes is list && data.includes.size() <= 30
+        && (data.includes.size() == 0 || (data.includes[0] is string && data.includes[0].size() <= 500))
+        && data.formatBadge is string && data.formatBadge.size() >= 1 && data.formatBadge.size() <= 100
+        && (!('badgeColor' in data) || (data.badgeColor is string && data.badgeColor.size() <= 100))
+        && data.isVisible is bool
+        && (!('fileName' in data) || (data.fileName is string && data.fileName.size() <= 200))
+        && (!('fileSize' in data) || (data.fileSize is string && data.fileSize.size() <= 50))
+        && (!('fileData' in data) || (data.fileData is string && data.fileData.size() <= 750000))
+        && data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 128
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPublication(data) {
+      return data is map
+        && data.keys().hasAll(['id', 'title', 'category', 'author', 'pages', 'summary', 'fullExcerpt', 'downloadFilename', 'isVisible', 'updatedBy', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'title', 'category', 'author', 'pages', 'summary', 'fullExcerpt', 'downloadFilename', 'isFatawa', 'fileData', 'fileSize', 'isVisible', 'updatedBy', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidLocalized(data.title, 300)
+        && isValidLocalized(data.category, 200)
+        && isValidLocalized(data.author, 200)
+        && data.pages is number && data.pages >= 1 && data.pages <= 50000
+        && isValidLocalized(data.summary, 5000)
+        && data.fullExcerpt is string && data.fullExcerpt.size() >= 1 && data.fullExcerpt.size() <= 20000
+        && data.downloadFilename is string && data.downloadFilename.size() >= 1 && data.downloadFilename.size() <= 200
+        && (!('isFatawa' in data) || data.isFatawa is bool)
+        && (!('fileData' in data) || (data.fileData is string && data.fileData.size() <= 750000))
+        && (!('fileSize' in data) || (data.fileSize is string && data.fileSize.size() <= 50))
+        && data.isVisible is bool
+        && data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 128
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMediaAd(data) {
+      return data is map
+        && data.keys().hasAll(['id', 'title', 'type', 'mediaUrl', 'badge', 'description', 'isVisible', 'updatedBy', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'title', 'type', 'mediaUrl', 'thumbnailUrl', 'badge', 'description', 'ctaText', 'ctaLink', 'isVisible', 'updatedBy', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidLocalized(data.title, 300)
+        && data.type in ['poster', 'video', 'announcement']
+        && data.mediaUrl is string && data.mediaUrl.size() >= 1 && data.mediaUrl.size() <= 750000
+        && (!('thumbnailUrl' in data) || (data.thumbnailUrl is string && data.thumbnailUrl.size() <= 750000))
+        && isValidLocalized(data.badge, 150)
+        && isValidLocalized(data.description, 3000)
+        && (!('ctaText' in data) || isValidLocalized(data.ctaText, 150))
+        && (!('ctaLink' in data) || (data.ctaLink is string && data.ctaLink.size() <= 1000))
+        && data.isVisible is bool
+        && data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 128
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCertificate(data) {
+      return data is map
+        && data.keys().hasAll(['id', 'certNumber', 'studentName', 'fatherName', 'courseName', 'grade', 'issueDate', 'issuedBy', 'verificationCode', 'isPublic', 'updatedBy', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'certNumber', 'enrollmentNo', 'studentName', 'fatherName', 'courseName', 'grade', 'issueDate', 'issuedBy', 'verificationCode', 'isPublic', 'updatedBy', 'updatedAt'])
+        && isValidId(data.id)
+        && data.certNumber is string && data.certNumber.size() >= 1 && data.certNumber.size() <= 100
+        && (!('enrollmentNo' in data) || (data.enrollmentNo is string && data.enrollmentNo.size() <= 100))
+        && data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 150
+        && data.fatherName is string && data.fatherName.size() >= 1 && data.fatherName.size() <= 150
+        && data.courseName is string && data.courseName.size() >= 1 && data.courseName.size() <= 250
+        && data.grade is string && data.grade.size() >= 1 && data.grade.size() <= 100
+        && data.issueDate is string && data.issueDate.size() >= 1 && data.issueDate.size() <= 100
+        && data.issuedBy is string && data.issuedBy.size() >= 1 && data.issuedBy.size() <= 150
+        && data.verificationCode is string && data.verificationCode.size() >= 1 && data.verificationCode.size() <= 100
+        && data.isPublic is bool
+        && data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 128
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTestimonial(data) {
+      return data is map
+        && data.keys().hasAll(['id', 'studentName', 'location', 'courseCompleted', 'quote', 'outcome', 'rating', 'completionDate', 'isVisible', 'updatedBy', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'studentName', 'location', 'courseCompleted', 'quote', 'outcome', 'rating', 'completionDate', 'certNumber', 'isVisible', 'updatedBy', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidLocalized(data.studentName, 150)
+        && isValidLocalized(data.location, 150)
+        && isValidLocalized(data.courseCompleted, 250)
+        && isValidLocalized(data.quote, 2000)
+        && isValidLocalized(data.outcome, 500)
+        && data.rating is number && data.rating >= 1 && data.rating <= 5
+        && data.completionDate is string && data.completionDate.size() >= 1 && data.completionDate.size() <= 100
+        && (!('certNumber' in data) || (data.certNumber is string && data.certNumber.size() <= 100))
+        && data.isVisible is bool
+        && data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 128
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidOrderPrivate(data) {
+      return data is map
+        && data.keys().hasAll(['id', 'studentName', 'fatherName', 'countryCity', 'whatsapp', 'type', 'courseOrItemTitle', 'totalAmountPKR', 'paymentMethod', 'paymentStatus', 'createdAt', 'createdAtServer', 'updatedAtServer'])
+        && data.keys().hasOnly(['id', 'studentName', 'fatherName', 'countryCity', 'whatsapp', 'email', 'type', 'courseOrItemTitle', 'selectedStoreItems', 'preferredTime', 'classFrequency', 'knowledgeLevel', 'totalAmountPKR', 'paymentMethod', 'paymentStatus', 'transactionId', 'notes', 'createdAt', 'createdAtServer', 'updatedAtServer'])
+        && isValidId(data.id)
+        && data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 150
+        && data.fatherName is string && data.fatherName.size() >= 1 && data.fatherName.size() <= 150
+        && data.countryCity is string && data.countryCity.size() >= 1 && data.countryCity.size() <= 150
+        && data.whatsapp is string && data.whatsapp.size() >= 3 && data.whatsapp.size() <= 40
+        && (!('email' in data) || (data.email is string && data.email.size() <= 200))
+        && data.type in ['live_course', 'store_purchase', 'digital_store']
+        && data.courseOrItemTitle is string && data.courseOrItemTitle.size() >= 1 && data.courseOrItemTitle.size() <= 500
+        && (!('selectedStoreItems' in data) || (
+            data.selectedStoreItems is list
+            && data.selectedStoreItems.size() <= 30
+            && (data.selectedStoreItems.size() == 0 || data.selectedStoreItems[0] is map)
+          ))
+        && (!('preferredTime' in data) || data.preferredTime in ['morning', 'afternoon', 'evening'])
+        && (!('classFrequency' in data) || (data.classFrequency is string && data.classFrequency.size() <= 120))
+        && (!('knowledgeLevel' in data) || (data.knowledgeLevel is string && data.knowledgeLevel.size() <= 120))
+        && data.totalAmountPKR is number && data.totalAmountPKR >= 0 && data.totalAmountPKR <= 10000000
+        && data.paymentMethod in ['easypaisa', 'jazzcash', 'sadapay', 'bank', 'card_overseas', 'wise_paypal']
+        && data.paymentStatus in ['Pending', 'Approved', 'Declined']
+        && (!('transactionId' in data) || (data.transactionId is string && data.transactionId.size() <= 150))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000))
+        && data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 100
+        && data.createdAtServer is timestamp
+        && data.updatedAtServer is timestamp;
+    }
+
+    function isValidOrderStatus(data) {
+      return data is map
+        && data.keys().hasAll(['id', 'studentName', 'fatherName', 'type', 'courseOrItemTitle', 'totalAmountPKR', 'paymentMethod', 'paymentStatus', 'createdAt', 'createdAtServer', 'updatedAtServer'])
+        && data.keys().hasOnly(['id', 'studentName', 'fatherName', 'type', 'courseOrItemTitle', 'totalAmountPKR', 'paymentMethod', 'paymentStatus', 'createdAt', 'createdAtServer', 'updatedAtServer'])
+        && isValidId(data.id)
+        && data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 150
+        && data.fatherName is string && data.fatherName.size() >= 1 && data.fatherName.size() <= 150
+        && data.type in ['live_course', 'store_purchase', 'digital_store']
+        && data.courseOrItemTitle is string && data.courseOrItemTitle.size() >= 1 && data.courseOrItemTitle.size() <= 500
+        && data.totalAmountPKR is number && data.totalAmountPKR >= 0 && data.totalAmountPKR <= 10000000
+        && data.paymentMethod in ['easypaisa', 'jazzcash', 'sadapay', 'bank', 'card_overseas', 'wise_paypal']
+        && data.paymentStatus in ['Pending', 'Approved', 'Declined']
+        && data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 100
+        && data.createdAtServer is timestamp
+        && data.updatedAtServer is timestamp;
+    }
+
+    // --- Collection Match Blocks ---
+
+    // Startup connectivity check path
+    match /test/{docId} {
+      allow get: if docId == 'connection';
+      allow list, create, update, delete: if false;
+    }
+
+    // Delegated Admins Registry
+    match /admins/{adminUid} {
+      allow get: if isSignedIn() && isValidId(adminUid) && (request.auth.uid == adminUid || isAdmin());
+      allow list: if false;
+      allow create: if isPrimaryAdmin()
+        && isValidId(adminUid)
+        && isValidAdminRole(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isPrimaryAdmin() && isValidId(adminUid);
+    }
+
+    // Singleton Public Academy Configuration (/site_config/main)
+    match /site_config/{configId} {
+      allow get: if configId == 'main';
+      allow list: if false;
+      allow create: if isSignedIn()
+        && configId == 'main'
+        && isValidSiteConfig(incoming())
+        && incoming().updatedAt == request.time
+        && isAdmin();
+      allow update: if isSignedIn()
+        && isValidSiteConfig(incoming())
+        && configId == 'main'
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['settings', 'notice', 'liveClass', 'payments', 'updatedBy', 'updatedAt'])
+        && isAdmin();
+      allow delete: if false;
+    }
+
+    // Public 1-on-1 Courses
+    match /courses/{courseId} {
+      allow get: if isValidId(courseId) && (existing().isVisible == true || isAdmin());
+      allow list: if existing().isVisible == true || (isPrimaryAdmin() && existing().isVisible in [true, false]);
+      allow create: if isSignedIn()
+        && isValidId(courseId)
+        && incoming().id == courseId
+        && isValidCourse(incoming())
+        && incoming().updatedAt == request.time
+        && isAdmin();
+      allow update: if isSignedIn()
+        && isValidCourse(incoming())
+        && isValidId(courseId)
+        && incoming().id == existing().id
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'description', 'feeMonthlyPKR', 'feeUSD', 'duration', 'classesPerWeek', 'instructor', 'level', 'features', 'timing', 'isVisible', 'isPopular', 'updatedBy', 'updatedAt'])
+        && isAdmin();
+      allow delete: if isSignedIn() && isValidId(courseId) && isAdmin();
+    }
+
+    // Digital Bookstore Products
+    match /store_items/{itemId} {
+      allow get: if isValidId(itemId) && (existing().isVisible == true || isAdmin());
+      allow list: if existing().isVisible == true || (isPrimaryAdmin() && existing().isVisible in [true, false]);
+      allow create: if isSignedIn()
+        && isValidId(itemId)
+        && incoming().id == itemId
+        && isValidStoreItem(incoming())
+        && incoming().updatedAt == request.time
+        && isAdmin();
+      allow update: if isSignedIn()
+        && isValidStoreItem(incoming())
+        && isValidId(itemId)
+        && incoming().id == existing().id
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'pricePKR', 'priceUSD', 'description', 'includes', 'formatBadge', 'badgeColor', 'isVisible', 'fileName', 'fileSize', 'fileData', 'updatedBy', 'updatedAt'])
+        && isAdmin();
+      allow delete: if isSignedIn() && isValidId(itemId) && isAdmin();
+    }
+
+    // Research Publications & Fatawa
+    match /publications/{pubId} {
+      allow get: if isValidId(pubId) && (existing().isVisible == true || isAdmin());
+      allow list: if existing().isVisible == true || (isPrimaryAdmin() && existing().isVisible in [true, false]);
+      allow create: if isSignedIn()
+        && isValidId(pubId)
+        && incoming().id == pubId
+        && isValidPublication(incoming())
+        && incoming().updatedAt == request.time
+        && isAdmin();
+      allow update: if isSignedIn()
+        && isValidPublication(incoming())
+        && isValidId(pubId)
+        && incoming().id == existing().id
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'author', 'pages', 'summary', 'fullExcerpt', 'downloadFilename', 'isFatawa', 'fileData', 'fileSize', 'isVisible', 'updatedBy', 'updatedAt'])
+        && isAdmin();
+      allow delete: if isSignedIn() && isValidId(pubId) && isAdmin();
+    }
+
+    // Media Ads & Video Broadcasts
+    match /media_ads/{adId} {
+      allow get: if isValidId(adId) && (existing().isVisible == true || isAdmin());
+      allow list: if existing().isVisible == true || (isPrimaryAdmin() && existing().isVisible in [true, false]);
+      allow create: if isSignedIn()
+        && isValidId(adId)
+        && incoming().id == adId
+        && isValidMediaAd(incoming())
+        && incoming().updatedAt == request.time
+        && isAdmin();
+      allow update: if isSignedIn()
+        && isValidMediaAd(incoming())
+        && isValidId(adId)
+        && incoming().id == existing().id
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'type', 'mediaUrl', 'thumbnailUrl', 'badge', 'description', 'ctaText', 'ctaLink', 'isVisible', 'updatedBy', 'updatedAt'])
+        && isAdmin();
+      allow delete: if isSignedIn() && isValidId(adId) && isAdmin();
+    }
+
+    // Official Sanad / Certificate Registry
+    match /certificates/{certId} {
+      allow get: if isValidId(certId) && (existing().isPublic == true || isAdmin());
+      allow list: if existing().isPublic == true || (isPrimaryAdmin() && existing().isPublic in [true, false]);
+      allow create: if isSignedIn()
+        && isValidId(certId)
+        && incoming().id == certId
+        && isValidCertificate(incoming())
+        && incoming().updatedAt == request.time
+        && isAdmin();
+      allow update: if isSignedIn()
+        && isValidCertificate(incoming())
+        && isValidId(certId)
+        && incoming().id == existing().id
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['certNumber', 'enrollmentNo', 'studentName', 'fatherName', 'courseName', 'grade', 'issueDate', 'issuedBy', 'verificationCode', 'isPublic', 'updatedBy', 'updatedAt'])
+        && isAdmin();
+      allow delete: if isSignedIn() && isValidId(certId) && isAdmin();
+    }
+
+    // Student Success Stories & Testimonials
+    match /testimonials/{testimonialId} {
+      allow get: if isValidId(testimonialId) && (existing().isVisible == true || isAdmin());
+      allow list: if existing().isVisible == true || (isPrimaryAdmin() && existing().isVisible in [true, false]);
+      allow create: if isSignedIn()
+        && isValidId(testimonialId)
+        && incoming().id == testimonialId
+        && isValidTestimonial(incoming())
+        && incoming().updatedAt == request.time
+        && isAdmin();
+      allow update: if isSignedIn()
+        && isValidTestimonial(incoming())
+        && isValidId(testimonialId)
+        && incoming().id == existing().id
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['studentName', 'location', 'courseCompleted', 'quote', 'outcome', 'rating', 'completionDate', 'certNumber', 'isVisible', 'updatedBy', 'updatedAt'])
+        && isAdmin();
+      allow delete: if isSignedIn() && isValidId(testimonialId) && isAdmin();
+    }
+
+    // Split-Collection PII Private Enrollments & Store Orders (Admin-Read Only)
+    match /orders_private/{orderId} {
+      allow get: if isSignedIn() && isValidId(orderId) && isAdmin();
+      allow list: if isPrimaryAdmin() && existing().paymentStatus in ['Pending', 'Approved', 'Declined'];
+      allow create: if isValidId(orderId)
+        && incoming().id == orderId
+        && isValidOrderPrivate(incoming())
+        && (incoming().paymentStatus == 'Pending' || isAdmin())
+        && incoming().createdAtServer == request.time
+        && incoming().updatedAtServer == request.time
+        && existsAfter(/databases/$(database)/documents/order_status/$(orderId));
+      allow update: if isSignedIn()
+        && isValidOrderPrivate(incoming())
+        && isValidId(orderId)
+        && incoming().id == existing().id
+        && incoming().createdAtServer == existing().createdAtServer
+        && incoming().updatedAtServer == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['paymentStatus', 'updatedAtServer'])
+        && (!(existing().paymentStatus in ['Approved', 'Declined']) || isAdmin())
+        && isAdmin()
+        && existsAfter(/databases/$(database)/documents/order_status/$(orderId));
+      allow delete: if isSignedIn()
+        && isValidId(orderId)
+        && isAdmin()
+        && !existsAfter(/databases/$(database)/documents/order_status/$(orderId));
+    }
+
+    // Split-Collection PII-Free Admission Status Slip (Exact ID Lookup Only, No Listing)
+    match /order_status/{orderId} {
+      allow get: if isValidId(orderId);
+      allow list: if false;
+      allow create: if isValidId(orderId)
+        && incoming().id == orderId
+        && isValidOrderStatus(incoming())
+        && (incoming().paymentStatus == 'Pending' || isAdmin())
+        && incoming().createdAtServer == request.time
+        && incoming().updatedAtServer == request.time
+        && existsAfter(/databases/$(database)/documents/orders_private/$(orderId));
+      allow update: if isSignedIn()
+        && isValidOrderStatus(incoming())
+        && isValidId(orderId)
+        && incoming().id == existing().id
+        && incoming().createdAtServer == existing().createdAtServer
+        && incoming().updatedAtServer == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['paymentStatus', 'updatedAtServer'])
+        && (!(existing().paymentStatus in ['Approved', 'Declined']) || isAdmin())
+        && isAdmin()
+        && existsAfter(/databases/$(database)/documents/orders_private/$(orderId));
+      allow delete: if isSignedIn()
+        && isValidId(orderId)
+        && isAdmin()
+        && !existsAfter(/databases/$(database)/documents/orders_private/$(orderId));
+    }
+  }
+}

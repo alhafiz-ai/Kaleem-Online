@@ -1,0 +1,755 @@
+{
+  "entities": {
+    "ConnectionTest": {
+      "title": "ConnectionTest",
+      "description": "Read-only connectivity probe document used on client startup.",
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "description": "Connectivity indicator."
+        }
+      }
+    },
+    "AdminRole": {
+      "title": "AdminRole",
+      "description": "Delegated administrator record keyed by Firebase Auth UID.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200,
+          "description": "Verified administrator email address."
+        },
+        "addedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the primary administrator who granted access."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of role creation."
+        }
+      },
+      "required": ["email", "addedBy", "createdAt"]
+    },
+    "SiteConfig": {
+      "title": "SiteConfig",
+      "description": "Singleton public configuration for Academy branding, notice banner, live class link, and payment gateways.",
+      "type": "object",
+      "properties": {
+        "settings": {
+          "type": "object",
+          "description": "Public SiteSettings map (titles, founder profile, colors, active sections, policies) excluding passwords."
+        },
+        "notice": {
+          "type": "object",
+          "description": "Top announcement banner configuration."
+        },
+        "liveClass": {
+          "type": "object",
+          "description": "Daily live Zoom/Meet classroom credentials and schedule."
+        },
+        "payments": {
+          "type": "object",
+          "description": "Local and international fee payment gateway instructions."
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the administrator who published this update."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the latest configuration update."
+        }
+      },
+      "required": ["settings", "notice", "liveClass", "payments", "updatedBy", "updatedAt"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "1-on-1 Islamic and Arabic curriculum course offering.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique course identifier matching document ID."
+        },
+        "title": {
+          "type": "object",
+          "description": "Localized course title (ur, en, ar)."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["tajweed", "arabic", "hadith_fiqh", "tafseer", "fatawa", "hifz", "qirat"],
+          "description": "Academic discipline category."
+        },
+        "description": {
+          "type": "object",
+          "description": "Localized course description."
+        },
+        "feeMonthlyPKR": {
+          "type": "number",
+          "description": "Monthly tuition fee in PKR."
+        },
+        "feeUSD": {
+          "type": "number",
+          "description": "Monthly tuition fee in USD."
+        },
+        "duration": {
+          "type": "object",
+          "description": "Localized program duration."
+        },
+        "classesPerWeek": {
+          "type": "number",
+          "description": "Weekly live sessions count."
+        },
+        "instructor": {
+          "type": "object",
+          "description": "Localized instructor name."
+        },
+        "level": {
+          "type": "string",
+          "enum": ["Beginner", "Intermediate", "Advanced", "All Levels"],
+          "description": "Prerequisite proficiency level."
+        },
+        "features": {
+          "type": "array",
+          "description": "Bounded list of syllabus highlights (max 30)."
+        },
+        "timing": {
+          "type": "object",
+          "description": "Optional localized class timing note."
+        },
+        "isVisible": {
+          "type": "boolean",
+          "description": "Whether the course is publicly listed to students."
+        },
+        "isPopular": {
+          "type": "boolean",
+          "description": "Optional featured badge indicator."
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Admin UID who last updated the course."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last modification."
+        }
+      },
+      "required": ["id", "title", "category", "description", "feeMonthlyPKR", "feeUSD", "duration", "classesPerWeek", "instructor", "level", "features", "isVisible", "updatedBy", "updatedAt"]
+    },
+    "StoreItem": {
+      "title": "StoreItem",
+      "description": "Digital bookstore product, treatise, or recorded course bundle.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique product identifier matching document ID."
+        },
+        "title": {
+          "type": "object",
+          "description": "Localized item title."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["package", "video", "pdf", "audio", "session"],
+          "description": "Digital product format category."
+        },
+        "pricePKR": {
+          "type": "number",
+          "description": "Price in PKR."
+        },
+        "priceUSD": {
+          "type": "number",
+          "description": "Price in USD."
+        },
+        "description": {
+          "type": "object",
+          "description": "Localized description."
+        },
+        "includes": {
+          "type": "array",
+          "description": "Bounded list of included resources (max 30)."
+        },
+        "formatBadge": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Short format badge text."
+        },
+        "badgeColor": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Optional styling token."
+        },
+        "isVisible": {
+          "type": "boolean",
+          "description": "Whether the product is visible in the public store."
+        },
+        "fileName": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Optional digital attachment filename."
+        },
+        "fileSize": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Optional formatted file size."
+        },
+        "fileData": {
+          "type": "string",
+          "maxLength": 750000,
+          "description": "Optional compact document data URI (< 750KB)."
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Admin UID who last updated the product."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last modification."
+        }
+      },
+      "required": ["id", "title", "category", "pricePKR", "priceUSD", "description", "includes", "formatBadge", "isVisible", "updatedBy", "updatedAt"]
+    },
+    "Publication": {
+      "title": "Publication",
+      "description": "Academic Islamic research paper, treatise, or fatwa publication.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique publication identifier matching document ID."
+        },
+        "title": {
+          "type": "object",
+          "description": "Localized publication title."
+        },
+        "category": {
+          "type": "object",
+          "description": "Localized academic category."
+        },
+        "author": {
+          "type": "object",
+          "description": "Localized author name."
+        },
+        "pages": {
+          "type": "number",
+          "description": "Page count."
+        },
+        "summary": {
+          "type": "object",
+          "description": "Localized executive summary."
+        },
+        "fullExcerpt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000,
+          "description": "Selected Arabic/Urdu scholarly excerpt."
+        },
+        "downloadFilename": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Download filename."
+        },
+        "isFatawa": {
+          "type": "boolean",
+          "description": "Optional Jurisprudence / Fatwa flag."
+        },
+        "fileData": {
+          "type": "string",
+          "maxLength": 750000,
+          "description": "Optional compact PDF data URI (< 750KB)."
+        },
+        "fileSize": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Optional human-readable file size."
+        },
+        "isVisible": {
+          "type": "boolean",
+          "description": "Whether publicly listed."
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Admin UID who last updated the publication."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last modification."
+        }
+      },
+      "required": ["id", "title", "category", "author", "pages", "summary", "fullExcerpt", "downloadFilename", "isVisible", "updatedBy", "updatedAt"]
+    },
+    "MediaAd": {
+      "title": "MediaAd",
+      "description": "Academy announcement flyer, video lecture highlight, or broadcast card.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique media item identifier."
+        },
+        "title": {
+          "type": "object",
+          "description": "Localized media title."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["poster", "video", "announcement"],
+          "description": "Media presentation type."
+        },
+        "mediaUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 750000,
+          "description": "Video URL or compact image URL/data URI."
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "maxLength": 750000,
+          "description": "Optional poster thumbnail URL."
+        },
+        "badge": {
+          "type": "object",
+          "description": "Localized badge label."
+        },
+        "description": {
+          "type": "object",
+          "description": "Localized announcement caption."
+        },
+        "ctaText": {
+          "type": "object",
+          "description": "Optional localized call-to-action label."
+        },
+        "ctaLink": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Optional destination URL."
+        },
+        "isVisible": {
+          "type": "boolean",
+          "description": "Whether publicly displayed."
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Admin UID who last updated the media item."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last modification."
+        }
+      },
+      "required": ["id", "title", "type", "mediaUrl", "badge", "description", "isVisible", "updatedBy", "updatedAt"]
+    },
+    "Certificate": {
+      "title": "Certificate",
+      "description": "Official academic Sanad / graduation certificate verification record.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique certificate identifier."
+        },
+        "certNumber": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Official Sanad serial number."
+        },
+        "enrollmentNo": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Optional linked student enrollment ID."
+        },
+        "studentName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150,
+          "description": "Graduating student full name."
+        },
+        "fatherName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150,
+          "description": "Father name for traditional Sanad lineage."
+        },
+        "courseName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 250,
+          "description": "Completed course title."
+        },
+        "grade": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Academic distinction / grade."
+        },
+        "issueDate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Formatted date of issuance."
+        },
+        "issuedBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150,
+          "description": "Issuing scholar / director name."
+        },
+        "verificationCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Registry verification code."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Whether publicly verifiable in the Sanad portal."
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Admin UID who issued or updated the certificate."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of issuance/update."
+        }
+      },
+      "required": ["id", "certNumber", "studentName", "fatherName", "courseName", "grade", "issueDate", "issuedBy", "verificationCode", "isPublic", "updatedBy", "updatedAt"]
+    },
+    "Testimonial": {
+      "title": "Testimonial",
+      "description": "Verified student success story and course completion testimonial.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique testimonial identifier matching document ID."
+        },
+        "studentName": {
+          "type": "object",
+          "description": "Localized graduate student name (ur, en, ar)."
+        },
+        "location": {
+          "type": "object",
+          "description": "Localized student city and country."
+        },
+        "courseCompleted": {
+          "type": "object",
+          "description": "Localized completed course title."
+        },
+        "quote": {
+          "type": "object",
+          "description": "Localized student reflection and feedback."
+        },
+        "outcome": {
+          "type": "object",
+          "description": "Localized documented learning outcome."
+        },
+        "rating": {
+          "type": "number",
+          "description": "Star rating from 1 to 5."
+        },
+        "completionDate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Graduation month/year."
+        },
+        "certNumber": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Optional verifiable Sanad certificate number."
+        },
+        "isVisible": {
+          "type": "boolean",
+          "description": "Whether publicly displayed in the Testimonials carousel."
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Admin UID who created or updated this testimonial."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last modification."
+        }
+      },
+      "required": ["id", "studentName", "location", "courseCompleted", "quote", "outcome", "rating", "completionDate", "isVisible", "updatedBy", "updatedAt"]
+    },
+    "OrderPrivate": {
+      "title": "OrderPrivate",
+      "description": "Admin-restricted student enrollment and bookstore order record containing contact PII.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Order / Enrollment ID matching document ID."
+        },
+        "studentName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150,
+          "description": "Student full name."
+        },
+        "fatherName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150,
+          "description": "Student father name."
+        },
+        "countryCity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150,
+          "description": "City and country."
+        },
+        "whatsapp": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40,
+          "description": "Student WhatsApp phone number (PII)."
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Optional student email address (PII)."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["live_course", "store_purchase", "digital_store"],
+          "description": "Enrollment vs digital store order."
+        },
+        "courseOrItemTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "Selected course or store items summary."
+        },
+        "selectedStoreItems": {
+          "type": "array",
+          "description": "Optional bounded list of purchased store items (max 30)."
+        },
+        "preferredTime": {
+          "type": "string",
+          "enum": ["morning", "afternoon", "evening"],
+          "description": "Optional preferred class schedule."
+        },
+        "classFrequency": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Optional weekly frequency."
+        },
+        "knowledgeLevel": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Optional prior level."
+        },
+        "totalAmountPKR": {
+          "type": "number",
+          "description": "Total fee or order amount in PKR."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["easypaisa", "jazzcash", "sadapay", "bank", "card_overseas", "wise_paypal"],
+          "description": "Selected payment gateway."
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["Pending", "Approved", "Declined"],
+          "description": "Verification status."
+        },
+        "transactionId": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "Optional payment reference."
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Optional student notes."
+        },
+        "createdAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Formatted display timestamp."
+        },
+        "createdAtServer": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server creation timestamp."
+        },
+        "updatedAtServer": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last-modified timestamp."
+        }
+      },
+      "required": ["id", "studentName", "fatherName", "countryCity", "whatsapp", "type", "courseOrItemTitle", "totalAmountPKR", "paymentMethod", "paymentStatus", "createdAt", "createdAtServer", "updatedAtServer"]
+    },
+    "OrderStatus": {
+      "title": "OrderStatus",
+      "description": "PII-free admission/order status receipt accessible only by exact registration ID.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Registration or Order ID matching document ID."
+        },
+        "studentName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150,
+          "description": "Student name for slip confirmation."
+        },
+        "fatherName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150,
+          "description": "Father name for slip confirmation."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["live_course", "store_purchase", "digital_store"],
+          "description": "Order type."
+        },
+        "courseOrItemTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "Enrolled course or item title."
+        },
+        "totalAmountPKR": {
+          "type": "number",
+          "description": "Fee amount in PKR."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["easypaisa", "jazzcash", "sadapay", "bank", "card_overseas", "wise_paypal"],
+          "description": "Payment channel."
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["Pending", "Approved", "Declined"],
+          "description": "Current verification status."
+        },
+        "createdAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Formatted submission date."
+        },
+        "createdAtServer": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server creation timestamp."
+        },
+        "updatedAtServer": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last-modified timestamp."
+        }
+      },
+      "required": ["id", "studentName", "fatherName", "type", "courseOrItemTitle", "totalAmountPKR", "paymentMethod", "paymentStatus", "createdAt", "createdAtServer", "updatedAtServer"]
+    }
+  },
+  "firestore": {
+    "/test/{docId}": {
+      "schema": { "$ref": "#/entities/ConnectionTest" },
+      "description": "Startup connection probe path."
+    },
+    "/admins/{adminUid}": {
+      "schema": { "$ref": "#/entities/AdminRole" },
+      "description": "Delegated admin UID registry managed by the primary academy director."
+    },
+    "/site_config/{configId}": {
+      "schema": { "$ref": "#/entities/SiteConfig" },
+      "description": "Singleton academy settings, notice banner, live class link, and payment gateways."
+    },
+    "/courses/{courseId}": {
+      "schema": { "$ref": "#/entities/Course" },
+      "description": "Public 1-on-1 curriculum courses synced in real time."
+    },
+    "/store_items/{itemId}": {
+      "schema": { "$ref": "#/entities/StoreItem" },
+      "description": "Digital bookstore items and study packs synced in real time."
+    },
+    "/publications/{pubId}": {
+      "schema": { "$ref": "#/entities/Publication" },
+      "description": "Academic research papers and fatawa synced in real time."
+    },
+    "/media_ads/{adId}": {
+      "schema": { "$ref": "#/entities/MediaAd" },
+      "description": "Academy posters, videos, and announcements synced in real time."
+    },
+    "/certificates/{certId}": {
+      "schema": { "$ref": "#/entities/Certificate" },
+      "description": "Official Sanad graduation registry records."
+    },
+    "/testimonials/{testimonialId}": {
+      "schema": { "$ref": "#/entities/Testimonial" },
+      "description": "Verified student success stories and graduate testimonials synced in real time."
+    },
+    "/orders_private/{orderId}": {
+      "schema": { "$ref": "#/entities/OrderPrivate" },
+      "description": "Admin-only enrollment and store orders containing student contact PII."
+    },
+    "/order_status/{orderId}": {
+      "schema": { "$ref": "#/entities/OrderStatus" },
+      "description": "PII-free admission status receipt readable only by exact ID."
+    }
+  }
+}

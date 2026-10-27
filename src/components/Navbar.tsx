@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Language, SiteSettings, NoticeBanner, ThemeMode } from '../types';
 import { UI_TEXT } from '../utils/translations';
+import { openExternalSafe } from '../utils/printHelper';
 import { 
   Globe, 
   Menu, 
@@ -8,7 +9,6 @@ import {
   ShieldCheck, 
   Video, 
   GraduationCap, 
-  Sparkles,
   ChevronDown,
   ArrowRight,
   ArrowLeft,
@@ -25,7 +25,8 @@ import {
   MessageCircle,
   Home,
   Bell,
-  Volume2
+  Award,
+  MessageSquareQuote
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -69,29 +70,31 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const navLinks = [
-    { id: 'founder', label: t.founder[lang], icon: <UserCheck className="w-4 h-4 text-amber-500" /> },
-    { id: 'courses', label: t.courses[lang], icon: <BookOpen className="w-4 h-4 text-emerald-500" /> },
+  const allNavLinks = [
+    ...(settings.activeSections.founder !== false ? [{ id: 'founder', label: t.founder[lang], icon: <UserCheck className="w-4 h-4 text-amber-500" /> }] : []),
+    ...(settings.activeSections.courses !== false ? [{ id: 'courses', label: t.courses[lang], icon: <BookOpen className="w-4 h-4 text-emerald-500" /> }] : []),
+    ...(settings.activeSections.testimonials !== false ? [{ id: 'testimonials', label: t.testimonials[lang], icon: <MessageSquareQuote className="w-4 h-4 text-amber-400" /> }] : []),
     { 
       id: 'student-portal', 
       label: lang === 'ur' ? 'داخلہ اسٹیٹس و سند' : lang === 'ar' ? 'بوابة القيد والشهادة' : 'Student Portal & Sanad', 
       icon: <GraduationCap className="w-4 h-4 text-amber-400" /> 
     },
-    { id: 'store', label: t.store[lang], icon: <ShoppingBag className="w-4 h-4 text-amber-500" /> },
-    { id: 'publications', label: t.publications[lang], icon: <FileText className="w-4 h-4 text-teal-500" /> },
-    { id: 'media-ads', label: t.mediaAds[lang], icon: <Radio className="w-4 h-4 text-rose-500" /> },
-    { id: 'scholar-apps', label: t.scholarApps[lang], icon: <Compass className="w-4 h-4 text-cyan-500" /> },
-    { id: 'payments', label: t.payments[lang], icon: <CreditCard className="w-4 h-4 text-green-500" /> },
+    ...(settings.activeSections.store !== false ? [{ id: 'store', label: t.store[lang], icon: <ShoppingBag className="w-4 h-4 text-amber-500" /> }] : []),
+    ...(settings.activeSections.publications !== false ? [{ id: 'publications', label: t.publications[lang], icon: <FileText className="w-4 h-4 text-teal-500" /> }] : []),
+    ...(settings.activeSections.mediaAds !== false ? [{ id: 'media-ads', label: t.mediaAds[lang], icon: <Radio className="w-4 h-4 text-rose-500" /> }] : []),
+    ...(settings.activeSections.scholarApps !== false ? [{ id: 'scholar-apps', label: t.scholarApps[lang], icon: <Compass className="w-4 h-4 text-cyan-500" /> }] : []),
+    ...(settings.activeSections.payments !== false ? [{ id: 'payments', label: t.payments[lang], icon: <CreditCard className="w-4 h-4 text-green-500" /> }] : []),
   ];
+  const navLinks = allNavLinks;
 
   const handleWhatsAppClick = () => {
     const cleanNumber = settings.whatsappNumber.replace(/[^0-9]/g, '');
     const greeting = lang === 'ur'
-      ? `السلام علیکم ورحمۃ اللہ، میں ادارہ دانش اکیڈمی سے متعلق معلومات حاصل کرنا چاہتا ہوں۔`
+      ? `السلام علیکم ورحمۃ اللہ، میں کلیم آن لائن اکیڈمی سے متعلق معلومات حاصل کرنا چاہتا ہوں۔`
       : lang === 'ar'
-      ? `السلام عليكم ورحمة الله، أود الاستفسار عن برامج أكاديمية الدانش.`
-      : `Assalamu Alaikum, I would like to inquire about Al-Danish Islamic Academy courses.`;
-    window.open(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(greeting)}`, '_blank');
+      ? `السلام عليكم ورحمة الله، أود الاستفسار عن برامج أكاديمية كليم العالمية.`
+      : `Assalamu Alaikum, I would like to inquire about Kaleem Online Academy courses.`;
+    openExternalSafe(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(greeting)}`);
   };
 
   return (
@@ -170,7 +173,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div 
                 className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center shadow-lg border-2 border-amber-400/80 relative overflow-hidden shrink-0 bg-gradient-to-br from-emerald-900 to-emerald-950 group"
                 style={{ backgroundColor: settings.primaryColor }}
-                title="ادارہ دانش اکیڈمی"
+                title={settings.siteTitle[lang] || 'Kaleem Online Academy'}
               >
                 <div className="absolute inset-0 bg-amber-400/10 group-hover:bg-amber-400/20 transition-all" />
                 <BookOpen className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-amber-300 drop-shadow" />
@@ -295,12 +298,25 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>{lang === 'ur' ? 'اردو' : lang === 'ar' ? 'العربية' : 'EN'}</span>
               </button>
 
+              {/* Verify Sanad Button (Desktop & Tablet) */}
+              <button
+                onClick={onOpenCertVerify}
+                className={`hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap shrink-0 ${
+                  isDark
+                    ? 'bg-stone-800 hover:bg-stone-700 text-amber-300 border-amber-500/40'
+                    : 'bg-amber-50 hover:bg-amber-100 text-emerald-950 border-amber-300'
+                }`}
+                title="Verify Student Sanad / Certificate"
+              >
+                <Award className="w-3.5 h-3.5 text-amber-500" />
+                <span>{t.verifySanad[lang]}</span>
+              </button>
+
               {/* Live Class Button (Desktop & Tablet) */}
               <button
                 onClick={onOpenLiveClass}
-                className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold bg-emerald-700/90 hover:bg-emerald-600 text-emerald-100 border border-emerald-500/50 transition-all shadow-sm active:scale-95"
+                className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold bg-emerald-700/90 hover:bg-emerald-600 text-emerald-100 border border-emerald-500/50 transition-all shadow-sm active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-300 animate-ping inline-block" />
                 <Video className="w-3.5 h-3.5 text-emerald-300" />
                 <span>{t.liveClassBadge[lang]}</span>
               </button>
@@ -308,7 +324,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Admin Switcher Button (Desktop & Tablet) */}
               <button
                 onClick={onOpenAdmin}
-                className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 border border-amber-300 shadow-md transition-all active:scale-95"
+                className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 border border-amber-300 shadow-md transition-all active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
                 title="Open Admin Control Panel"
               >
                 <Lock className="w-3.5 h-3.5" />

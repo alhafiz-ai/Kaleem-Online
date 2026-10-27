@@ -86,8 +86,8 @@ export const Hero: React.FC<HeroProps> = ({
         {/* Main Grid: Academy Hero Text + Founder Profile Card */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
-          {/* Left Column (7 cols): Title, Subtitle, CTAs, Stats */}
-          <div className="lg:col-span-7 space-y-5 sm:space-y-6 text-center lg:text-left">
+          {/* Left Column: Title, Subtitle, CTAs, Stats */}
+          <div className={`${settings.activeSections.founder !== false ? 'lg:col-span-7 text-center lg:text-left' : 'lg:col-span-12 max-w-4xl mx-auto text-center'} space-y-5 sm:space-y-6`}>
             
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs sm:text-sm font-semibold shadow-sm">
               <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
@@ -107,7 +107,7 @@ export const Hero: React.FC<HeroProps> = ({
             </p>
 
             {/* CTAs - Mobile Friendly Stacking */}
-            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center lg:justify-start gap-2.5 sm:gap-3.5 pt-2">
+            <div className={`flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center ${settings.activeSections.founder !== false ? 'lg:justify-start' : ''} gap-2.5 sm:gap-3.5 pt-2`}>
               <button
                 onClick={() => onOpenEnrollment()}
                 className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-bold bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-stone-950 shadow-xl shadow-amber-500/20 transform hover:-translate-y-0.5 transition-all text-sm sm:text-base flex items-center justify-center gap-2 active:scale-95 touch-target cursor-pointer font-kufi"
@@ -167,6 +167,7 @@ export const Hero: React.FC<HeroProps> = ({
           </div>
 
           {/* Right Column (5 cols): Founder Profile Summary Card */}
+          {settings.activeSections.founder !== false && (
           <div className="lg:col-span-5" id="founder">
             <div className="relative bg-gradient-to-b from-stone-900 via-stone-900 to-emerald-950/80 border-2 border-amber-500/40 rounded-3xl p-5 sm:p-7 shadow-2xl overflow-hidden hover:border-amber-400/70 transition-all">
               
@@ -233,6 +234,7 @@ export const Hero: React.FC<HeroProps> = ({
 
             </div>
           </div>
+          )}
 
         </div>
 

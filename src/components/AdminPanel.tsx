@@ -10,12 +10,23 @@ import {
   PaymentGateways, 
   MediaAdItem,
   PublicationItem,
+  TestimonialItem,
   Language
 } from '../types';
 import { storage } from '../utils/storage';
 import { resolveAssetUrl } from '../utils/imageUtils';
+import { downloadPrintableElement } from '../utils/printHelper';
 import { INITIAL_POLICIES } from '../data/initialData';
 import { FounderBioModal } from './FounderBioModal';
+import {
+  auth,
+  onAuthStateChanged,
+  signInAdminWithGoogle,
+  signOutAdmin,
+  isPrimaryAdminUser,
+  PRIMARY_ADMIN_EMAIL,
+  User
+} from '../firebase';
 import { 
   LayoutDashboard, 
   Users, 
@@ -67,7 +78,13 @@ import {
   Globe2,
   UserCheck,
   Calendar,
-  ArrowUpRight
+  ArrowUpRight,
+  MessageSquareQuote,
+  Download,
+  RotateCcw,
+  Star,
+  XCircle,
+  Clock
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -130,15 +147,15 @@ const THEME_PALETTES = [
 
 // Smart Academy Name Auto-Translator with Traditional Islamic Nomenclature
 const autoTranslateAcademyName = (enName: string): { ur: string; ar: string } => {
-  if (!enName.trim()) {
+  if (!enName.trim() || /^kaleem\s+online\s+academy$/i.test(enName.trim())) {
     return {
-      ur: "ادارہ دانش برائے تعلیماتِ اسلامیہ و علومِ عربیہ",
-      ar: "أكاديمية الدانش العالمية للعلوم الإسلامية واللغة العربية"
+      ur: "کلیم آن لائن اکیڈمی",
+      ar: "أكاديمية كليم العالمية للتعليم الإلكتروني"
     };
   }
 
   const clean = enName.trim();
-  const hasDanish = /danish/i.test(clean);
+  const hasKaleem = /kaleem/i.test(clean);
   const hasIslamic = /islamic|islam/i.test(clean);
   const hasArabic = /arabic|arab/i.test(clean);
   const hasAcademy = /academy/i.test(clean);
@@ -148,8 +165,8 @@ const autoTranslateAcademyName = (enName: string): { ur: string; ar: string } =>
   const hasJamia = /jamia|university|darul\s*uloom/i.test(clean);
 
   // Traditional Arabic Islamic nomenclature (أكاديمية / معهد / مجمع / دار)
-  let arPrefix = hasAcademy ? "أكاديمية" : hasInstitute ? "معهد" : hasJamia ? "جامعة" : "دار";
-  let arBrand = hasDanish ? "الدانش" : clean.replace(/academy|institute|islamic|arabic|online|international|jamia|university/gi, '').trim() || "الهدى";
+  const arPrefix = hasAcademy ? "أكاديمية" : hasInstitute ? "معهد" : hasJamia ? "جامعة" : "دار";
+  const arBrand = hasKaleem ? "كليم" : clean.replace(/academy|institute|islamic|arabic|online|international|jamia|university/gi, '').trim() || "كليم";
   let arSuffix = "";
   if (hasIslamic && hasArabic) {
     arSuffix = "العالمية للعلوم الإسلامية واللغة العربية";
@@ -162,28 +179,31 @@ const autoTranslateAcademyName = (enName: string): { ur: string; ar: string } =>
   } else if (hasHadith) {
     arSuffix = "للحديث الشريف والسنة النبوية";
   } else {
-    arSuffix = "العالمية للدراسات الإسلامية";
+    arSuffix = "العالمية للتعليم الإلكتروني";
   }
   const arTitle = `${arPrefix} ${arBrand} ${arSuffix}`.replace(/\s+/g, ' ').trim();
 
-  // Traditional Authentic Urdu Islamic madrasah nomenclature (ادارہ / جامعہ / دار العلوم)
-  let urPrefix = hasJamia ? "جامعہ" : hasInstitute ? "معهد" : "ادارہ";
-  let urBrand = hasDanish ? "دانش" : clean.replace(/academy|institute|islamic|arabic|online|international|jamia|university/gi, '').trim() || "الہدٰی";
-  let urSuffix = "";
-  if (hasIslamic && hasArabic) {
-    urSuffix = "برائے تعلیماتِ اسلامیہ و علومِ عربیہ";
-  } else if (hasIslamic) {
-    urSuffix = "برائے علومِ اسلامیہ و افتاء";
-  } else if (hasArabic) {
-    urSuffix = "برائے تدریسِ لسانِ عربی";
-  } else if (hasQuran) {
-    urSuffix = "برائے حفظ و تجویدِ قرآنِ کریم";
-  } else if (hasHadith) {
-    urSuffix = "برائے تدریسِ حدیث و سنت";
+  // Traditional Authentic Urdu Islamic nomenclature
+  const urBrand = hasKaleem ? "کلیم" : clean.replace(/academy|institute|islamic|arabic|online|international|jamia|university/gi, '').trim() || "کلیم";
+  let urTitle = "";
+  if (hasKaleem && !hasIslamic && !hasArabic && !hasQuran && !hasHadith && !hasJamia) {
+    urTitle = "کلیم آن لائن اکیڈمی";
   } else {
-    urSuffix = "برائے دینی و عصری تعلیمات";
+    const urPrefix = hasJamia ? "جامعہ" : hasInstitute ? "معہد" : "ادارہ";
+    let urSuffix = "آن لائن اکیڈمی";
+    if (hasIslamic && hasArabic) {
+      urSuffix = "برائے تعلیماتِ اسلامیہ و علومِ عربیہ";
+    } else if (hasIslamic) {
+      urSuffix = "برائے علومِ اسلامیہ و افتاء";
+    } else if (hasArabic) {
+      urSuffix = "برائے تدریسِ لسانِ عربی";
+    } else if (hasQuran) {
+      urSuffix = "برائے حفظ و تجویدِ قرآنِ کریم";
+    } else if (hasHadith) {
+      urSuffix = "برائے تدریسِ حدیث و سنت";
+    }
+    urTitle = `${urPrefix} ${urBrand} ${urSuffix}`.replace(/\s+/g, ' ').trim();
   }
-  const urTitle = `${urPrefix} ${urBrand} ${urSuffix}`.replace(/\s+/g, ' ').trim();
 
   return { ur: urTitle, ar: arTitle };
 };
@@ -206,16 +226,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
   const [payments, setPayments] = useState<PaymentGateways>(storage.getPayments());
   const [publications, setPublications] = useState<PublicationItem[]>(storage.getPublications());
   const [mediaAds, setMediaAds] = useState<MediaAdItem[]>(storage.getMediaAds());
+  const [testimonials, setTestimonials] = useState<TestimonialItem[]>(storage.getTestimonials());
 
-  // Security Auth State
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Security Auth & Live Cloud Sync State
+  const [cloudUser, setCloudUser] = useState<User | null>(() => auth.currentUser);
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+  const isCloudAdminActive = isPrimaryAdminUser(cloudUser);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => isPrimaryAdminUser(auth.currentUser));
   const [enteredPassword, setEnteredPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [newMasterPassword, setNewMasterPassword] = useState('');
   const [passwordSuccessToast, setPasswordSuccessToast] = useState('');
 
   // Active Tab
-  type TabType = 'dashboard' | 'founder_bio' | 'orders' | 'courses' | 'store' | 'digital_library' | 'media_gallery' | 'liveclass' | 'certificates' | 'theme' | 'policies' | 'notice_payments';
+  type TabType = 'dashboard' | 'founder_bio' | 'orders' | 'courses' | 'store' | 'digital_library' | 'media_gallery' | 'liveclass' | 'certificates' | 'testimonials' | 'theme' | 'policies' | 'notice_payments';
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
   // Admin Theme Mode (Dark / Light)
@@ -251,20 +275,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
   // Search & Filter in Orders
   const [orderSearch, setOrderSearch] = useState('');
-  const [orderFilter, setOrderFilter] = useState<'all' | 'Pending' | 'Approved'>('all');
+  const [orderFilter, setOrderFilter] = useState<'all' | 'Pending' | 'Approved' | 'Declined'>('all');
+
+  // Sandbox-safe 2-click inline confirmation key (replaces blocked window.confirm)
+  const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null);
 
   // Invoice Viewer Modal State
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<EnrollmentOrder | null>(null);
   const [invoiceModalLang, setInvoiceModalLang] = useState<Language>('ur');
 
-  // Course Management Modals
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+  // Controlled Course Modal Draft State
+  const [courseDraft, setCourseDraft] = useState<Course | null>(null);
+  const [isCourseEditMode, setIsCourseEditMode] = useState(false);
   const [newCourseCurriculumInput, setNewCourseCurriculumInput] = useState('');
 
-  // Store Item Management Modals
-  const [editingStoreItem, setEditingStoreItem] = useState<StoreItem | null>(null);
-  const [showAddStoreModal, setShowAddStoreModal] = useState(false);
+  // Controlled Store Item Modal Draft State
+  const [storeDraft, setStoreDraft] = useState<StoreItem | null>(null);
+  const [isStoreEditMode, setIsStoreEditMode] = useState(false);
   const [newStoreFeatureInput, setNewStoreFeatureInput] = useState('');
 
   // Digital PDF Upload Modal State
@@ -288,13 +315,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
   const [digitalSearch, setDigitalSearch] = useState('');
   const [digitalFilter, setDigitalFilter] = useState<'all' | 'publication' | 'store'>('all');
 
-  // Media Ads & Gallery Management
-  const [showAddMediaModal, setShowAddMediaModal] = useState(false);
-  const [editingMediaAd, setEditingMediaAd] = useState<MediaAdItem | null>(null);
+  // Controlled Media Ads & Gallery Modal Draft State
+  const [mediaDraft, setMediaDraft] = useState<MediaAdItem | null>(null);
+  const [isMediaEditMode, setIsMediaEditMode] = useState(false);
+
+  // Controlled Student Testimonial Modal Draft State
+  const [testimonialDraft, setTestimonialDraft] = useState<TestimonialItem | null>(null);
+  const [isTestimonialEditMode, setIsTestimonialEditMode] = useState(false);
 
   // Certificate Generator Form State
   const [certStudentName, setCertStudentName] = useState('');
   const [certFatherName, setCertFatherName] = useState('');
+  const [certEnrollmentNo, setCertEnrollmentNo] = useState('');
   const [certCourseName, setCertCourseName] = useState('Advanced Quranic Tajweed & Phonetics');
   const [certGrade, setCertGrade] = useState('Mumtaz (Distinction - 95%)');
   const [generatedCertPreview, setGeneratedCertPreview] = useState<CertificateRecord | null>(null);
@@ -304,7 +336,86 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const requestConfirm = (key: string, action: () => void) => {
+    if (confirmDeleteKey === key) {
+      setConfirmDeleteKey(null);
+      action();
+    } else {
+      setConfirmDeleteKey(key);
+      setTimeout(() => {
+        setConfirmDeleteKey(prev => (prev === key ? null : prev));
+      }, 4500);
+    }
+  };
+
+  // Subscribe to Firebase Auth & real-time storage updates (orders, certificates, items, settings, testimonials)
+  useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, (u) => {
+      setCloudUser(u);
+      if (isPrimaryAdminUser(u)) {
+        setIsAuthenticated(true);
+        setLoginError('');
+      }
+    });
+
+    const handleRealtimeRefresh = () => {
+      setSettings(storage.getSettings());
+      setNotice(storage.getNotice());
+      setLiveClass(storage.getLiveClass());
+      setPayments(storage.getPayments());
+      setOrders(storage.getOrders());
+      setCertificates(storage.getCertificates());
+      setCourses(storage.getCourses());
+      setStoreItems(storage.getStoreItems());
+      setPublications(storage.getPublications());
+      setMediaAds(storage.getMediaAds());
+      setTestimonials(storage.getTestimonials());
+    };
+
+    window.addEventListener('aldanish_storage_update', handleRealtimeRefresh);
+    return () => {
+      unsubAuth();
+      window.removeEventListener('aldanish_storage_update', handleRealtimeRefresh);
+    };
+  }, []);
+
+  const handleGoogleAdminLogin = async () => {
+    setLoginError('');
+    try {
+      const user = await signInAdminWithGoogle();
+      if (isPrimaryAdminUser(user)) {
+        setIsAuthenticated(true);
+        showToast('Live Cloud Sync Active! تمام تبدیلیاں اب فوراً صارفین تک پہنچیں گی۔');
+      } else {
+        await signOutAdmin();
+        setLoginError(
+          `صرف ڈائریکٹر اکاؤنٹ (${PRIMARY_ADMIN_EMAIL}) کو کلاؤڈ ایڈمن رسائی حاصل ہے۔ آپ نے (${user.email}) منتخب کیا۔`
+        );
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Google Sign-In cancelled or blocked.';
+      setLoginError(`Google Sign-In: ${msg}`);
+    }
+  };
+
+  const handleManualCloudSync = async () => {
+    if (!isCloudAdminActive) {
+      await handleGoogleAdminLogin();
+      return;
+    }
+    setIsSyncingCloud(true);
+    try {
+      await storage.syncAllLocalToCloud();
+      showToast('تمام ترتیبات، کورسز اور اسٹور آئٹمز لائیو کلاؤڈ پر فوری اپڈیٹ ہو گئے!');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Cloud sync error';
+      showToast(`Sync Error: ${msg}`);
+    } finally {
+      setIsSyncingCloud(false);
+    }
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -319,7 +430,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
   const handleUpdatePassword = () => {
     if (!newMasterPassword.trim() || newMasterPassword.length < 4) {
-      alert("Password must be at least 4 characters long.");
+      showToast("Password must be at least 4 characters long.");
       return;
     }
     const updated = { ...settings, adminPassword: newMasterPassword.trim() };
@@ -331,22 +442,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
   };
 
   // Orders Management
-  const handleApproveOrder = (orderId: string) => {
-    storage.updateOrderStatus(orderId, 'Approved');
+  const handleOrderStatusChange = (orderId: string, status: 'Pending' | 'Approved' | 'Declined') => {
+    storage.updateOrderStatus(orderId, status);
     setOrders(storage.getOrders());
-    showToast("Enrollment order marked as Approved!");
+    showToast(`Order ${orderId} marked as ${status}!`);
+  };
+
+  const handleApproveOrder = (orderId: string) => {
+    handleOrderStatusChange(orderId, 'Approved');
+  };
+
+  const handleIssueSanadFromOrder = (order: EnrollmentOrder) => {
+    setCertStudentName(order.studentName);
+    setCertFatherName(order.fatherName || 'Muhammad');
+    setCertEnrollmentNo(order.id);
+    setCertCourseName(order.courseOrItemTitle);
+    setActiveTab('certificates');
+    showToast(`Pre-filled Sanad generator for ${order.studentName} (${order.id})`);
   };
 
   const handleDeleteOrder = (orderId: string) => {
-    if (confirm("Are you sure you want to delete this order?")) {
+    requestConfirm(`order-${orderId}`, () => {
       storage.deleteOrder(orderId);
       setOrders(storage.getOrders());
       showToast("Order removed from database.");
-    }
+    });
   };
 
   const getSendWhatsAppUrl = (order: EnrollmentOrder) => {
-    const text = `Assalamu Alaikum ${order.studentName},\n\nYour application for "${order.courseOrItemTitle}" at Al-Danish Islamic Academy has been APPROVED!\n\n*Class Details & Zoom Access:*\n- Platform: ${liveClass.platform}\n- Meeting Link: ${liveClass.meetingUrl}\n- Meeting ID: ${liveClass.meetingId}\n- Passcode: ${liveClass.passcode}\n- Schedule: Daily as confirmed\n\nInstructor: Mufti Danish Kaleem\n\nPlease join 5 minutes early. Welcome to the academy!`;
+    const text = `Assalamu Alaikum ${order.studentName},\n\nYour application for "${order.courseOrItemTitle}" at Kaleem Online Academy has been APPROVED!\n\n*Class Details & Zoom Access:*\n- Platform: ${liveClass.platform}\n- Meeting Link: ${liveClass.meetingUrl}\n- Meeting ID: ${liveClass.meetingId}\n- Passcode: ${liveClass.passcode}\n- Schedule: Daily as confirmed\n\nInstructor: Mufti Danish Kaleem\n\nPlease join 5 minutes early. Welcome to Kaleem Online Academy!`;
     const cleanPhone = order.whatsapp.replace(/[^0-9]/g, '');
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
   };
@@ -360,45 +484,140 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
   };
 
   const handleDeleteCourse = (id: string) => {
-    if (confirm("Delete this course permanently from the academy curriculum?")) {
+    requestConfirm(`course-${id}`, () => {
       storage.deleteCourse(id);
       setCourses(storage.getCourses());
       showToast("Course removed.");
-    }
+    });
   };
 
-  const handleSaveCourseEdit = (e: React.FormEvent) => {
+  const openNewCourseModal = () => {
+    setIsCourseEditMode(false);
+    setNewCourseCurriculumInput('');
+    setCourseDraft({
+      id: `course-${Date.now()}`,
+      title: { en: '', ur: '', ar: '' },
+      category: 'tajweed',
+      description: { en: '', ur: '', ar: '' },
+      feeMonthlyPKR: 4500,
+      feeUSD: 35,
+      duration: { en: '3 Months (36 Sessions)', ur: '3 ماہ (36 اسباق)', ar: '3 أشهر' },
+      classesPerWeek: 3,
+      instructor: { en: 'Mufti Danish Kaleem', ur: 'مفتی دانش کلیم', ar: 'المفتي دانش كليم' },
+      level: 'All Levels',
+      features: ['1-on-1 Live Zoom Lessons', 'PDF Study Notes', 'Verifiable Sanad Certificate'],
+      isVisible: true,
+      isPopular: false
+    });
+  };
+
+  const openEditCourseModal = (course: Course) => {
+    setIsCourseEditMode(true);
+    setNewCourseCurriculumInput('');
+    setCourseDraft({
+      ...course,
+      title: { ...course.title },
+      description: { ...course.description },
+      duration: { ...course.duration },
+      instructor: { ...course.instructor },
+      features: [...course.features]
+    });
+  };
+
+  const handleSaveCourseDraft = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingCourse) return;
-    storage.updateCourse(editingCourse);
+    if (!courseDraft || !courseDraft.title.en.trim()) {
+      showToast("Please provide the English course title.");
+      return;
+    }
+    const normalized: Course = {
+      ...courseDraft,
+      title: {
+        en: courseDraft.title.en.trim(),
+        ur: courseDraft.title.ur.trim() || courseDraft.title.en.trim(),
+        ar: courseDraft.title.ar.trim() || courseDraft.title.ur.trim() || courseDraft.title.en.trim()
+      },
+      description: {
+        en: courseDraft.description.en.trim() || '1-on-1 scholarly mentorship under Mufti Danish Kaleem.',
+        ur: courseDraft.description.ur.trim() || courseDraft.description.en.trim() || 'مفتی دانش کلیم صاحب کی زیرِ نگرانی انفرادی آن لائن تدریس۔',
+        ar: courseDraft.description.ar.trim() || courseDraft.description.en.trim() || 'تعليم فردي مباشر بإشراف المفتي دانش كليم.'
+      }
+    };
+    if (isCourseEditMode) {
+      storage.updateCourse(normalized);
+      showToast("Course syllabus, schedule, and fee updated!");
+    } else {
+      storage.addCourse(normalized);
+      showToast("New Course published to Kaleem Online Academy!");
+    }
     setCourses(storage.getCourses());
-    setEditingCourse(null);
-    showToast("Course syllabus, time, and fee details updated!");
-  };
-
-  const handleCreateNewCourse = (newCourse: Course) => {
-    storage.addCourse(newCourse);
-    setCourses(storage.getCourses());
-    setShowAddCourseModal(false);
-    showToast("New Course published successfully!");
+    setCourseDraft(null);
   };
 
   // Store Controls
-  const handleSaveStoreItemEdit = (e: React.FormEvent) => {
+  const openNewStoreModal = () => {
+    setIsStoreEditMode(false);
+    setNewStoreFeatureInput('');
+    setStoreDraft({
+      id: `store-${Date.now()}`,
+      title: { en: '', ur: '', ar: '' },
+      category: 'pdf',
+      pricePKR: 800,
+      priceUSD: 6,
+      description: { en: '', ur: '', ar: '' },
+      includes: ['Full PDF eBook', 'Permanent Download Access'],
+      formatBadge: 'PDF Book',
+      isVisible: true
+    });
+  };
+
+  const openEditStoreModal = (item: StoreItem) => {
+    setIsStoreEditMode(true);
+    setNewStoreFeatureInput('');
+    setStoreDraft({
+      ...item,
+      title: { ...item.title },
+      description: { ...item.description },
+      includes: [...item.includes]
+    });
+  };
+
+  const handleSaveStoreDraft = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingStoreItem) return;
-    storage.updateStoreItem(editingStoreItem);
+    if (!storeDraft || !storeDraft.title.en.trim()) {
+      showToast("Please provide the product title.");
+      return;
+    }
+    const normalized: StoreItem = {
+      ...storeDraft,
+      title: {
+        en: storeDraft.title.en.trim(),
+        ur: storeDraft.title.ur.trim() || storeDraft.title.en.trim(),
+        ar: storeDraft.title.ar.trim() || storeDraft.title.ur.trim() || storeDraft.title.en.trim()
+      },
+      description: {
+        en: storeDraft.description.en.trim() || 'Authenticated digital study material by Kaleem Online Academy.',
+        ur: storeDraft.description.ur.trim() || storeDraft.description.en.trim() || 'کلیم آن لائن اکیڈمی کا مستند تعلیمی و تحقیقی نصاب۔',
+        ar: storeDraft.description.ar.trim() || storeDraft.description.en.trim() || 'مادة علمية رقمية معتمدة من أكاديمية كليم العالمية.'
+      }
+    };
+    if (isStoreEditMode) {
+      storage.updateStoreItem(normalized);
+      showToast("Store product & digital files updated!");
+    } else {
+      storage.addStoreItem(normalized);
+      showToast("New Bookstore product published!");
+    }
     setStoreItems(storage.getStoreItems());
-    setEditingStoreItem(null);
-    showToast("Store product & digital files updated!");
+    setStoreDraft(null);
   };
 
   const handleDeleteStoreItem = (id: string) => {
-    if (confirm("Delete this digital store product permanently?")) {
+    requestConfirm(`store-${id}`, () => {
       storage.deleteStoreItem(id);
       setStoreItems(storage.getStoreItems());
       showToast("Store product deleted.");
-    }
+    });
   };
 
   // Digital PDF Upload Handler
@@ -421,7 +640,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
   const handleCreatePdfItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!pdfTitleEn.trim() && !pdfTitleUr.trim()) {
-      alert("Please provide at least a title for the PDF resource.");
+      showToast("Please provide at least a title for the PDF resource.");
       return;
     }
 
@@ -500,11 +719,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
   };
 
   const handleDeletePublication = (id: string) => {
-    if (confirm("Delete this publication/PDF from the library?")) {
+    requestConfirm(`pub-${id}`, () => {
       storage.deletePublication(id);
       setPublications(storage.getPublications());
       showToast("Publication removed from library.");
-    }
+    });
   };
 
   const handleTogglePublicationVisibility = (id: string) => {
@@ -516,11 +735,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
   // Media Ads Handlers
   const handleDeleteMediaAd = (id: string) => {
-    if (confirm("Delete this media ad / video highlight?")) {
+    requestConfirm(`media-${id}`, () => {
       storage.deleteMediaAd(id);
       setMediaAds(storage.getMediaAds());
       showToast("Media banner removed.");
-    }
+    });
   };
 
   const handleToggleMediaAdVisibility = (id: string) => {
@@ -530,17 +749,175 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
     showToast("Media ad visibility toggled!");
   };
 
-  const handleSaveMediaAd = (ad: MediaAdItem) => {
-    if (editingMediaAd) {
-      storage.updateMediaAd(ad);
+  const openNewMediaModal = () => {
+    setIsMediaEditMode(false);
+    setMediaDraft({
+      id: `ad-${Date.now()}`,
+      title: { en: '', ur: '', ar: '' },
+      type: 'poster',
+      mediaUrl: '/assets/aistudio/founder.jpg_450b2eb5.jpeg',
+      badge: { en: 'Admissions Open', ur: 'داخلے جاری ہیں', ar: 'التسجيل متاح' },
+      description: { en: '', ur: '', ar: '' },
+      ctaText: { en: 'Enroll Now', ur: 'داخلہ لیں', ar: 'سجل الآن' },
+      ctaLink: '#courses',
+      isVisible: true
+    });
+  };
+
+  const openEditMediaModal = (ad: MediaAdItem) => {
+    setIsMediaEditMode(true);
+    setMediaDraft({
+      ...ad,
+      title: { ...ad.title },
+      badge: { ...ad.badge },
+      description: { ...ad.description },
+      ctaText: ad.ctaText ? { ...ad.ctaText } : { en: 'Enroll Now', ur: 'داخلہ لیں', ar: 'سجل الآن' }
+    });
+  };
+
+  const handleSaveMediaDraft = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mediaDraft || !mediaDraft.title.en.trim()) {
+      showToast("Please provide the media title.");
+      return;
+    }
+    const normalized: MediaAdItem = {
+      ...mediaDraft,
+      title: {
+        en: mediaDraft.title.en.trim(),
+        ur: mediaDraft.title.ur.trim() || mediaDraft.title.en.trim(),
+        ar: mediaDraft.title.ar.trim() || mediaDraft.title.ur.trim() || mediaDraft.title.en.trim()
+      },
+      description: {
+        en: mediaDraft.description.en.trim() || 'Official announcement from Kaleem Online Academy.',
+        ur: mediaDraft.description.ur.trim() || mediaDraft.description.en.trim() || 'کلیم آن لائن اکیڈمی کا خصوصی تعلیمی اعلان۔',
+        ar: mediaDraft.description.ar.trim() || mediaDraft.description.en.trim() || 'إعلان أكاديمي رسمي من أكاديمية كليم العالمية.'
+      }
+    };
+    if (isMediaEditMode) {
+      storage.updateMediaAd(normalized);
       showToast("Media ad updated successfully!");
-      setEditingMediaAd(null);
     } else {
-      storage.addMediaAd(ad);
+      storage.addMediaAd(normalized);
       showToast("New media ad published!");
-      setShowAddMediaModal(false);
     }
     setMediaAds(storage.getMediaAds());
+    setMediaDraft(null);
+  };
+
+  // Student Testimonials Section & CRUD Controls
+  const handleToggleTestimonialsSection = () => {
+    const nextEnabled = settings.activeSections.testimonials === false ? true : false;
+    const updated: SiteSettings = {
+      ...settings,
+      activeSections: {
+        ...settings.activeSections,
+        testimonials: nextEnabled
+      }
+    };
+    setSettings(updated);
+    storage.saveSettings(updated);
+    showToast(nextEnabled ? "Student Testimonials section ENABLED on website!" : "Student Testimonials section HIDDEN on website.");
+  };
+
+  const openNewTestimonialModal = () => {
+    setIsTestimonialEditMode(false);
+    setTestimonialDraft({
+      id: `testi-${Date.now()}`,
+      studentName: { en: '', ur: '', ar: '' },
+      location: { en: '', ur: '', ar: '' },
+      courseCompleted: {
+        en: courses[0]?.title.en || 'Advanced Quranic Tajweed & Phonetics',
+        ur: courses[0]?.title.ur || 'تجوید و قراءت کورس',
+        ar: courses[0]?.title.ar || 'دورة التجويد المتقن'
+      },
+      quote: { en: '', ur: '', ar: '' },
+      outcome: { en: 'Awarded Sanad with Distinction', ur: 'اعزازی سندِ فراغت حاصل کی', ar: 'حصل على سند الإتقان بامتياز' },
+      rating: 5,
+      completionDate: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      certNumber: '',
+      isVisible: true
+    });
+  };
+
+  const openEditTestimonialModal = (item: TestimonialItem) => {
+    setIsTestimonialEditMode(true);
+    setTestimonialDraft({
+      ...item,
+      studentName: { ...item.studentName },
+      location: { ...item.location },
+      courseCompleted: { ...item.courseCompleted },
+      quote: { ...item.quote },
+      outcome: { ...item.outcome }
+    });
+  };
+
+  const handleSaveTestimonialDraft = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testimonialDraft || !testimonialDraft.studentName.en.trim() || !testimonialDraft.quote.en.trim()) {
+      showToast("Please provide Student Name and Success Story quote.");
+      return;
+    }
+    const nameEn = testimonialDraft.studentName.en.trim();
+    const locEn = testimonialDraft.location.en.trim() || 'Online Student';
+    const courseEn = testimonialDraft.courseCompleted.en.trim() || 'Quran & Arabic Studies';
+    const quoteEn = testimonialDraft.quote.en.trim();
+    const outcomeEn = testimonialDraft.outcome.en.trim() || 'Completed Course with Distinction';
+
+    const normalized: TestimonialItem = {
+      ...testimonialDraft,
+      studentName: {
+        en: nameEn,
+        ur: testimonialDraft.studentName.ur.trim() || nameEn,
+        ar: testimonialDraft.studentName.ar.trim() || testimonialDraft.studentName.ur.trim() || nameEn
+      },
+      location: {
+        en: locEn,
+        ur: testimonialDraft.location.ur.trim() || locEn,
+        ar: testimonialDraft.location.ar.trim() || testimonialDraft.location.ur.trim() || locEn
+      },
+      courseCompleted: {
+        en: courseEn,
+        ur: testimonialDraft.courseCompleted.ur.trim() || courseEn,
+        ar: testimonialDraft.courseCompleted.ar.trim() || testimonialDraft.courseCompleted.ur.trim() || courseEn
+      },
+      quote: {
+        en: quoteEn,
+        ur: testimonialDraft.quote.ur.trim() || quoteEn,
+        ar: testimonialDraft.quote.ar.trim() || testimonialDraft.quote.ur.trim() || quoteEn
+      },
+      outcome: {
+        en: outcomeEn,
+        ur: testimonialDraft.outcome.ur.trim() || outcomeEn,
+        ar: testimonialDraft.outcome.ar.trim() || testimonialDraft.outcome.ur.trim() || outcomeEn
+      },
+      certNumber: testimonialDraft.certNumber?.trim() || undefined
+    };
+
+    if (isTestimonialEditMode) {
+      storage.updateTestimonial(normalized);
+      showToast("Student testimonial updated live!");
+    } else {
+      storage.addTestimonial(normalized);
+      showToast("New student testimonial added to carousel!");
+    }
+    setTestimonials(storage.getTestimonials());
+    setTestimonialDraft(null);
+  };
+
+  const handleToggleTestimonialVisibility = (id: string) => {
+    const updated = testimonials.map(t => t.id === id ? { ...t, isVisible: !t.isVisible } : t);
+    setTestimonials(updated);
+    storage.saveTestimonials(updated);
+    showToast("Testimonial visibility updated!");
+  };
+
+  const handleDeleteTestimonial = (id: string) => {
+    requestConfirm(`testi-${id}`, () => {
+      storage.deleteTestimonial(id);
+      setTestimonials(storage.getTestimonials());
+      showToast("Student testimonial deleted.");
+    });
   };
 
   // Live Class Manager
@@ -559,65 +936,121 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
   const handleGenerateCertificate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!certStudentName.trim() || !certFatherName.trim()) {
-      alert("Please provide Student Name and Father's Name.");
+      showToast("Please provide Student Name and Father's Name.");
       return;
     }
 
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const newCert: CertificateRecord = {
       id: `cert-${Date.now()}`,
-      certNumber: `AD-CERT-${new Date().getFullYear()}-${randomNum}`,
+      certNumber: `KOA-CERT-${new Date().getFullYear()}-${randomNum}`,
+      enrollmentNo: certEnrollmentNo.trim() || undefined,
       studentName: certStudentName.trim(),
       fatherName: certFatherName.trim(),
       courseName: certCourseName,
       grade: certGrade,
       issueDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
       issuedBy: "Mufti Danish Kaleem",
-      verificationCode: `VER-AD-${randomNum}`
+      verificationCode: `VER-KOA-${randomNum}`
     };
 
     storage.addCertificate(newCert);
     setCertificates(storage.getCertificates());
     setGeneratedCertPreview(newCert);
-    showToast("Certificate issued and added to Official Registry!");
+    setCertStudentName('');
+    setCertFatherName('');
+    setCertEnrollmentNo('');
+    showToast(`Sanad ${newCert.certNumber} issued and synced to Official Registry!`);
+  };
+
+  const handleDeleteCertificate = (id: string) => {
+    requestConfirm(`cert-${id}`, () => {
+      storage.deleteCertificate(id);
+      const nextCerts = storage.getCertificates();
+      setCertificates(nextCerts);
+      if (generatedCertPreview?.id === id) {
+        setGeneratedCertPreview(nextCerts[0] || null);
+      }
+      showToast("Certificate removed from registry.");
+    });
   };
 
   // Theme & Sections Save
   const handleSaveTheme = () => {
     storage.saveSettings(settings);
-    showToast("Theme, Backgrounds, and Section settings saved!");
+    showToast("Theme, Backgrounds, and Section settings saved live!");
+  };
+
+  const handleResetLocalCache = () => {
+    requestConfirm('reset-all', () => {
+      storage.resetAll();
+      setSettings(storage.getSettings());
+      setNotice(storage.getNotice());
+      setCourses(storage.getCourses());
+      setStoreItems(storage.getStoreItems());
+      setLiveClass(storage.getLiveClass());
+      setOrders(storage.getOrders());
+      setCertificates(storage.getCertificates());
+      setTestimonials(storage.getTestimonials());
+      setPayments(storage.getPayments());
+      setPublications(storage.getPublications());
+      setMediaAds(storage.getMediaAds());
+      showToast("Local cache reset to Kaleem Online Academy defaults!");
+    });
   };
 
   // Policies Save
   const handleSavePolicies = () => {
     storage.saveSettings(settings);
-    showToast("Academy Policies & Safeguards updated!");
+    showToast("Academy Policies & Safeguards updated live!");
   };
 
   // Notice & Payments Save
   const handleSaveNoticeAndPayments = () => {
-    storage.saveNotice(notice);
-    storage.savePayments(payments);
-    showToast("Notice & Local/Overseas Payment Gateways saved!");
+    storage.saveNoticeAndPayments(notice, payments);
+    showToast("Notice & Local/Overseas Payment Gateways saved live!");
   };
 
-  // Founder Bio & Portrait Handlers
+  // Founder Bio & Portrait Handlers (with lightweight JPEG compression for instant Cloud Sync)
   const handleFounderImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 8 * 1024 * 1024) {
-      alert("Image size should be less than 8MB.");
+      showToast("Image size should be less than 8MB.");
       return;
     }
     const reader = new FileReader();
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
-      if (dataUrl) {
-        const updated = { ...settings, founderImage: dataUrl };
-        setSettings(updated);
-        storage.saveSettings(updated);
-        showToast("Founder portrait uploaded and updated across site!");
-      }
+      if (!dataUrl) return;
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 480;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressed = canvas.toDataURL('image/jpeg', 0.82);
+          const updated = { ...settings, founderImage: compressed };
+          setSettings(updated);
+          storage.saveSettings(updated);
+          showToast("Founder portrait uploaded & synced live across site!");
+        }
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -726,6 +1159,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
             Restricted Master Control Panel &bull; Mufti Danish Kaleem
           </p>
 
+          <div className="mb-5 space-y-2.5">
+            <button
+              type="button"
+              onClick={handleGoogleAdminLogin}
+              className="w-full py-3.5 px-4 rounded-xl font-bold bg-emerald-700 hover:bg-emerald-600 text-white shadow-lg text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center gap-2 border border-emerald-400/40"
+            >
+              <Globe className="w-4 h-4 text-amber-300 shrink-0" />
+              <span>Director Google Login (Live Cloud Sync)</span>
+            </button>
+            <p className="text-[11px] text-center text-emerald-600 dark:text-emerald-400 font-semibold" dir="rtl">
+              فوری عالمی اپڈیٹ کے لیے ڈائریکٹر جی میل ({PRIMARY_ADMIN_EMAIL}) سے سائن اِن کریں
+            </p>
+          </div>
+
+          <div className="relative flex py-2 items-center mb-4">
+            <div className="flex-grow border-t border-stone-300 dark:border-stone-800" />
+            <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-stone-400">Or Local Password</span>
+            <div className="flex-grow border-t border-stone-300 dark:border-stone-800" />
+          </div>
+
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${
@@ -798,16 +1251,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
           {/* Logo & Status */}
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-950 border border-amber-400 flex items-center justify-center font-amiri text-lg text-amber-300 shrink-0">
-              د
+              ك
             </div>
             <div>
               <h1 className={`font-kufi font-bold text-sm sm:text-base leading-tight ${isLight ? 'text-emerald-950' : 'text-amber-300'}`}>
-                {settings.siteTitle.en} &bull; Admin Master Control
+                {settings.siteTitle.en || 'Kaleem Online Academy'} &bull; Admin Master Control
               </h1>
-              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Live Cloud Sync Active &bull; Mufti Danish Kaleem
-              </span>
+              {isCloudAdminActive ? (
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Cloud Sync Active ({cloudUser?.email}) &bull; تبدیلیاں فوراً تمام صارفین تک پہنچ رہی ہیں
+                </span>
+              ) : (
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                  Local Mode &bull; عالمی لائیو اپڈیٹ کے لیے Google Cloud کنیکٹ کریں
+                </span>
+              )}
             </div>
           </div>
 
@@ -829,6 +1289,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
           {/* Navigation & Theme Action Buttons */}
           <div className="flex items-center gap-2">
+            {/* Live Cloud Sync / Google Connect Button */}
+            <button
+              onClick={handleManualCloudSync}
+              disabled={isSyncingCloud}
+              type="button"
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 ${
+                isCloudAdminActive
+                  ? 'bg-emerald-700 hover:bg-emerald-600 border-emerald-500 text-white'
+                  : 'bg-amber-500 hover:bg-amber-400 border-amber-400 text-stone-950'
+              }`}
+              title={isCloudAdminActive ? 'Sync all changes to live Cloud immediately' : `Sign in as ${PRIMARY_ADMIN_EMAIL} to broadcast changes worldwide`}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCloud ? 'animate-spin' : ''}`} />
+              <span className="text-[11px] sm:text-xs">
+                {isSyncingCloud ? 'Syncing...' : isCloudAdminActive ? 'Sync Live' : 'Connect Cloud'}
+              </span>
+            </button>
+
             {/* Admin Theme Toggle (Light / Dark) */}
             <button
               onClick={toggleAdminTheme}
@@ -854,7 +1332,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
               <span className="hidden sm:inline">View Academy Site</span>
             </button>
             <button
-              onClick={() => setIsAuthenticated(false)}
+              onClick={async () => {
+                if (isCloudAdminActive) {
+                  await signOutAdmin();
+                }
+                setIsAuthenticated(false);
+              }}
               className="px-3 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 text-xs font-semibold transition-colors cursor-pointer"
             >
               Lock 🔒
@@ -863,6 +1346,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
         </div>
       </header>
+
+      {/* Banner prompting Google Cloud Sign-In if entered via local password only */}
+      {!isCloudAdminActive && (
+        <div className="bg-amber-500/15 border-b border-amber-500/40 px-4 py-2.5">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+            <p className="text-amber-700 dark:text-amber-300 font-semibold text-center sm:text-right" dir="rtl">
+              ⚡ نوٹ: اپنی تبدیلیوں کو بغیر Republish کیے فوری طور پر دنیا بھر کے تمام طلبہ و صارفین تک پہنچانے کے لیے اپنے ڈائریکٹر گوگل اکاؤنٹ ({PRIMARY_ADMIN_EMAIL}) سے کنیکٹ کریں۔
+            </p>
+            <button
+              type="button"
+              onClick={handleGoogleAdminLogin}
+              className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold whitespace-nowrap shadow cursor-pointer shrink-0"
+            >
+              Connect {PRIMARY_ADMIN_EMAIL}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Tab Quick Dropdown Selector */}
       <div className={`md:hidden ${isLight ? 'bg-white border-stone-200' : 'bg-stone-900 border-stone-800'} border-b px-3 py-2 flex items-center gap-2`}>
@@ -881,7 +1382,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
           <option value="media_gallery">🎬 Media Ads, Videos & Pics ({mediaAds.length})</option>
           <option value="liveclass">📹 Live Zoom / Meet Class</option>
           <option value="certificates">🎓 Certificates Registry ({certificates.length})</option>
-          <option value="theme">🎨 Theme & Colors</option>
+          <option value="testimonials">💬 Student Testimonials ({testimonials.length})</option>
+          <option value="theme">🎨 Theme & Website Sections</option>
           <option value="policies">🛡️ Academy Policies & Safeguards</option>
           <option value="notice_payments">💳 Notice & Local/Overseas Gateways</option>
         </select>
@@ -1037,6 +1539,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
           >
             <Award className="w-3.5 h-3.5" />
             <span>Certificates ({certificates.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('testimonials')}
+            className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+              activeTab === 'testimonials' 
+                ? 'bg-amber-500 text-stone-950 font-bold shadow' 
+                : isLight 
+                ? 'text-stone-700 hover:bg-stone-200 hover:text-stone-900' 
+                : 'text-stone-300 hover:bg-stone-800 hover:text-amber-300'
+            }`}
+          >
+            <MessageSquareQuote className="w-3.5 h-3.5" />
+            <span>Testimonials ({testimonials.length})</span>
           </button>
 
           <button
@@ -2108,7 +2624,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
                 <select
                   value={orderFilter}
-                  onChange={(e) => setOrderFilter(e.target.value as any)}
+                  onChange={(e) => setOrderFilter(e.target.value as 'all' | 'Pending' | 'Approved' | 'Declined')}
                   className={`border rounded-xl px-3 py-2 text-xs outline-none cursor-pointer ${
                     isLight ? 'bg-stone-50 border-stone-300 text-stone-900' : 'bg-stone-800 border-stone-700 text-stone-200'
                   }`}
@@ -2116,6 +2632,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                   <option value="all">All Status</option>
                   <option value="Pending">Pending Only</option>
                   <option value="Approved">Approved Only</option>
+                  <option value="Declined">Declined Only</option>
                 </select>
               </div>
             </div>
@@ -2144,7 +2661,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                   ) : (
                     filteredOrders.map(order => (
                       <tr key={order.id} className="hover:bg-stone-800/50 transition-colors">
-                        <td className="py-3 px-4 font-mono">
+                        <td className="py-3 px-4 font-mono tabular-nums">
                           <span className="font-bold text-amber-400 block">{order.id}</span>
                           <span className="text-[10px] text-stone-500">{order.createdAt}</span>
                         </td>
@@ -2157,7 +2674,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                             href={`https://wa.me/${order.whatsapp.replace(/[^0-9]/g, '')}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-emerald-400 hover:underline flex items-center gap-1 font-mono"
+                            className="text-emerald-400 hover:underline flex items-center gap-1 font-mono tabular-nums"
                           >
                             <Phone className="w-3 h-3" />
                             <span>{order.whatsapp}</span>
@@ -2173,64 +2690,111 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <span className="font-bold font-mono text-amber-300 text-sm block">
+                          <span className="font-bold font-mono tabular-nums text-amber-300 text-sm block">
                             PKR {order.totalAmountPKR.toLocaleString()}
                           </span>
                           <span className="text-[10px] uppercase text-stone-400">{order.paymentMethod}</span>
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold ${
                             order.paymentStatus === 'Approved'
                               ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                              : order.paymentStatus === 'Declined'
+                              ? 'bg-rose-950 text-rose-300 border border-rose-800'
                               : 'bg-amber-950 text-amber-300 border border-amber-800'
                           }`}>
-                            {order.paymentStatus}
+                            {order.paymentStatus === 'Approved' ? (
+                              <CheckCircle2 className="w-3 h-3" />
+                            ) : order.paymentStatus === 'Declined' ? (
+                              <XCircle className="w-3 h-3" />
+                            ) : (
+                              <Clock className="w-3 h-3" />
+                            )}
+                            <span>{order.paymentStatus}</span>
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-right space-x-1 whitespace-nowrap">
-                          {/* View Multilingual Receipt/Invoice */}
-                          <button
-                            onClick={() => {
-                              setSelectedOrderForInvoice(order);
-                              setInvoiceModalLang('ur');
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-750 text-amber-300 font-semibold text-[11px] border border-stone-700 transition-colors cursor-pointer"
-                            title="View Official Receipt in Urdu, Arabic or English"
-                          >
-                            <FileText className="w-3 h-3 text-amber-400" />
-                            <span>رسید / Invoice</span>
-                          </button>
-
-                          {/* Send WhatsApp Link */}
-                          <a
-                            href={getSendWhatsAppUrl(order)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-[11px] transition-colors"
-                            title="Send Zoom Link via WhatsApp"
-                          >
-                            <Send className="w-3 h-3" />
-                            <span>WhatsApp Link</span>
-                          </a>
-
-                          {/* Approve Button */}
-                          {order.paymentStatus !== 'Approved' && (
+                        <td className="py-3 px-4 text-right">
+                          <div className="inline-flex flex-wrap items-center justify-end gap-1">
+                            {/* View Multilingual Receipt/Invoice */}
                             <button
-                              onClick={() => handleApproveOrder(order.id)}
-                              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-[11px] transition-colors cursor-pointer"
+                              type="button"
+                              onClick={() => {
+                                setSelectedOrderForInvoice(order);
+                                setInvoiceModalLang('ur');
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-amber-300 font-semibold text-[11px] border border-stone-700 transition-colors cursor-pointer whitespace-nowrap"
+                              title="View Official Receipt in Urdu, Arabic or English"
                             >
-                              Approve
+                              <FileText className="w-3 h-3 text-amber-400" />
+                              <span>Invoice</span>
                             </button>
-                          )}
 
-                          {/* Delete */}
-                          <button
-                            onClick={() => handleDeleteOrder(order.id)}
-                            className="p-1 rounded-lg text-stone-500 hover:text-rose-400 hover:bg-stone-800 cursor-pointer"
-                            title="Delete Record"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                            {/* Send WhatsApp Link */}
+                            <a
+                              href={getSendWhatsAppUrl(order)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-[11px] transition-colors whitespace-nowrap"
+                              title="Send Zoom Link via WhatsApp"
+                            >
+                              <Send className="w-3 h-3" />
+                              <span>WhatsApp</span>
+                            </a>
+
+                            {/* Approve Button */}
+                            {order.paymentStatus !== 'Approved' && (
+                              <button
+                                type="button"
+                                onClick={() => handleOrderStatusChange(order.id, 'Approved')}
+                                className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-[11px] transition-colors cursor-pointer whitespace-nowrap"
+                              >
+                                Approve
+                              </button>
+                            )}
+
+                            {/* Issue Sanad Shortcut */}
+                            {order.paymentStatus === 'Approved' && (
+                              <button
+                                type="button"
+                                onClick={() => handleIssueSanadFromOrder(order)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500 hover:text-stone-950 text-amber-300 border border-amber-500/40 font-bold text-[11px] transition-colors cursor-pointer whitespace-nowrap"
+                                title="Issue Official Sanad Certificate for this Student"
+                              >
+                                <Award className="w-3 h-3" />
+                                <span>Issue Sanad</span>
+                              </button>
+                            )}
+
+                            {/* Decline Button */}
+                            {order.paymentStatus !== 'Declined' && (
+                              <button
+                                type="button"
+                                onClick={() => handleOrderStatusChange(order.id, 'Declined')}
+                                className="px-2 py-1 rounded-lg bg-stone-800 hover:bg-rose-950 text-stone-400 hover:text-rose-300 border border-stone-700 text-[11px] font-semibold transition-colors cursor-pointer whitespace-nowrap"
+                                title="Mark Order as Declined"
+                              >
+                                Decline
+                              </button>
+                            )}
+
+                            {/* Delete (2-Click Inline Confirm) */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteOrder(order.id)}
+                              className={`px-2 py-1 rounded-lg transition-colors cursor-pointer text-[11px] font-bold flex items-center gap-1 ${
+                                confirmDeleteKey === `order-${order.id}`
+                                  ? 'bg-rose-600 text-white'
+                                  : 'text-stone-500 hover:text-rose-400 hover:bg-stone-800'
+                              }`}
+                              title="Delete Record"
+                            >
+                              {confirmDeleteKey === `order-${order.id}` ? (
+                                <span>Confirm?</span>
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -2261,8 +2825,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                 </p>
               </div>
               <button
-                onClick={() => setShowAddCourseModal(true)}
-                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow cursor-pointer font-kufi"
+                type="button"
+                onClick={openNewCourseModal}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow cursor-pointer font-kufi whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add New Course (نیا کورس شامل کریں)</span>
@@ -2280,13 +2845,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-stone-800 text-amber-300 uppercase tracking-wider">
-                        {course.category} &bull; {course.level}
+                      <span className="text-[11px] font-semibold text-amber-300 uppercase tracking-wider">
+                        {course.category} &middot; {course.level}
                       </span>
                       <div className="flex items-center gap-1">
                         <button
+                          type="button"
                           onClick={() => handleToggleCourseVisibility(course.id)}
-                          className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 ${
+                          className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer ${
                             course.isVisible ? 'text-emerald-400 hover:bg-stone-800' : 'text-stone-500 hover:bg-stone-800'
                           }`}
                           title="Toggle Visibility"
@@ -2294,11 +2860,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                           {course.isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDeleteCourse(course.id)}
-                          className="p-1.5 rounded-lg text-stone-500 hover:text-rose-400 hover:bg-stone-800 cursor-pointer"
+                          className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                            confirmDeleteKey === `course-${course.id}`
+                              ? 'bg-rose-600 text-white'
+                              : 'text-stone-500 hover:text-rose-400 hover:bg-stone-800'
+                          }`}
                           title="Delete Course"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {confirmDeleteKey === `course-${course.id}` ? 'Confirm?' : <Trash2 className="w-4 h-4" />}
                         </button>
                       </div>
                     </div>
@@ -2323,13 +2894,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                   <div className="pt-3 border-t border-stone-800 flex items-center justify-between">
                     <div>
                       <span className="text-stone-400 text-[10px] block">Fee:</span>
-                      <strong className="text-amber-400 font-mono text-sm">PKR {course.feeMonthlyPKR.toLocaleString()}</strong>
-                      <span className="text-[10px] text-stone-500 ml-1">(~${course.feeUSD})</span>
+                      <strong className="text-amber-400 font-mono tabular-nums text-sm">PKR {course.feeMonthlyPKR.toLocaleString()}</strong>
+                      <span className="text-[10px] text-stone-500 ml-1 tabular-nums">(~${course.feeUSD})</span>
                     </div>
 
                     <button
-                      onClick={() => setEditingCourse(course)}
-                      className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-amber-500 hover:text-stone-950 text-stone-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                      type="button"
+                      onClick={() => openEditCourseModal(course)}
+                      className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-amber-500 hover:text-stone-950 text-stone-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Edit Full Course</span>
@@ -2361,8 +2933,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                 </p>
               </div>
               <button
-                onClick={() => setShowAddStoreModal(true)}
-                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow cursor-pointer font-kufi"
+                type="button"
+                onClick={openNewStoreModal}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow cursor-pointer font-kufi whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add Bookstore Item / PDF</span>
@@ -2379,28 +2952,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-stone-800 text-amber-300 uppercase">
+                      <span className="text-[11px] font-semibold text-amber-300 uppercase tracking-wider">
                         {item.formatBadge}
                       </span>
                       <div className="flex items-center gap-1">
                         <button
+                          type="button"
                           onClick={() => {
                             const updated = storeItems.map(x => x.id === item.id ? { ...x, isVisible: !x.isVisible } : x);
                             setStoreItems(updated);
                             storage.saveStoreItems(updated);
                             showToast("Store product visibility toggled!");
                           }}
-                          className={`p-1.5 rounded-lg text-xs font-semibold ${
+                          className={`p-1.5 rounded-lg text-xs font-semibold cursor-pointer ${
                             item.isVisible ? 'text-emerald-400 hover:bg-stone-800' : 'text-stone-500 hover:bg-stone-800'
                           }`}
                         >
                           {item.isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDeleteStoreItem(item.id)}
-                          className="p-1.5 rounded-lg text-stone-500 hover:text-rose-400 hover:bg-stone-800 cursor-pointer"
+                          className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                            confirmDeleteKey === `store-${item.id}`
+                              ? 'bg-rose-600 text-white'
+                              : 'text-stone-500 hover:text-rose-400 hover:bg-stone-800'
+                          }`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {confirmDeleteKey === `store-${item.id}` ? 'Confirm?' : <Trash2 className="w-4 h-4" />}
                         </button>
                       </div>
                     </div>
@@ -2411,7 +2990,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
                     {item.fileName && (
                       <div className="p-2 rounded-xl bg-stone-800/60 border border-stone-700/60 text-[11px] flex items-center justify-between text-stone-300 mb-3">
-                        <span className="truncate">📎 {item.fileName}</span>
+                        <span className="truncate">{item.fileName}</span>
                         <span className="text-[10px] font-mono text-emerald-400">{item.fileSize || 'PDF Attached'}</span>
                       </div>
                     )}
@@ -2420,13 +2999,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                   <div className="pt-3 border-t border-stone-800 flex items-center justify-between">
                     <div>
                       <span className="text-[10px] text-stone-400 block">Price:</span>
-                      <strong className="text-amber-400 font-mono text-base">PKR {item.pricePKR.toLocaleString()}</strong>
-                      <span className="text-xs text-stone-500 ml-1 font-mono">(~${item.priceUSD})</span>
+                      <strong className="text-amber-400 font-mono tabular-nums text-base">PKR {item.pricePKR.toLocaleString()}</strong>
+                      <span className="text-xs text-stone-500 ml-1 font-mono tabular-nums">(~${item.priceUSD})</span>
                     </div>
 
                     <button
-                      onClick={() => setEditingStoreItem(item)}
-                      className="px-3.5 py-1.5 rounded-xl bg-stone-800 hover:bg-amber-500 hover:text-stone-950 text-stone-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                      type="button"
+                      onClick={() => openEditStoreModal(item)}
+                      className="px-3.5 py-1.5 rounded-xl bg-stone-800 hover:bg-amber-500 hover:text-stone-950 text-stone-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Edit Details & Files</span>
@@ -2521,6 +3101,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                           </button>
                         )}
                         <button
+                          type="button"
                           onClick={() => {
                             if (item.itemType === 'publication') {
                               handleDeletePublication(item.id);
@@ -2528,9 +3109,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                               handleDeleteStoreItem(item.id);
                             }
                           }}
-                          className="p-1.5 rounded-lg text-stone-500 hover:text-rose-400 cursor-pointer"
+                          className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                            confirmDeleteKey === `${item.itemType === 'publication' ? 'pub' : 'store'}-${item.id}`
+                              ? 'bg-rose-600 text-white'
+                              : 'text-stone-500 hover:text-rose-400'
+                          }`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {confirmDeleteKey === `${item.itemType === 'publication' ? 'pub' : 'store'}-${item.id}` ? (
+                            'Confirm?'
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -2556,13 +3145,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                       <a
                         href={item.fileData}
                         download={item.downloadFilename || item.fileName || 'treatise.pdf'}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1"
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 whitespace-nowrap"
                       >
                         <FileDown className="w-3 h-3" />
                         <span>Download PDF</span>
                       </a>
                     ) : (
-                      <span className="text-[10px] text-stone-500 italic">Simulated Direct PDF</span>
+                      <span className="text-[10px] text-stone-500 italic">Built-in Scholarly PDF</span>
                     )}
                   </div>
                 </div>
@@ -2587,11 +3176,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                 </p>
               </div>
               <button
-                onClick={() => {
-                  setEditingMediaAd(null);
-                  setShowAddMediaModal(true);
-                }}
-                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow cursor-pointer font-kufi"
+                type="button"
+                onClick={openNewMediaModal}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow cursor-pointer font-kufi whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add Media Flyer / Video (نئی تصویر یا ویڈیو)</span>
@@ -2606,13 +3193,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                     <img
                       src={ad.mediaUrl}
                       alt={ad.title.en}
+                      referrerPolicy="no-referrer"
                       className="w-full h-full object-cover opacity-85"
                     />
                     <div className="absolute top-3 left-3 flex gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-stone-950 uppercase">
+                      <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-500 text-stone-950 uppercase">
                         {ad.type}
                       </span>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-stone-900/80 text-amber-300 border border-amber-500/30">
+                      <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-stone-900/85 text-amber-300 border border-amber-500/30">
                         {ad.badge.en}
                       </span>
                     </div>
@@ -2625,8 +3213,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
                     <div className="pt-3 border-t border-stone-800 flex items-center justify-between">
                       <button
+                        type="button"
                         onClick={() => handleToggleMediaAdVisibility(ad.id)}
-                        className={`text-xs font-semibold flex items-center gap-1 ${ad.isVisible ? 'text-emerald-400' : 'text-stone-500'}`}
+                        className={`text-xs font-semibold flex items-center gap-1 cursor-pointer ${ad.isVisible ? 'text-emerald-400' : 'text-stone-500'}`}
                       >
                         {ad.isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                         <span>{ad.isVisible ? 'Visible' : 'Hidden'}</span>
@@ -2634,20 +3223,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
 
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => {
-                            setEditingMediaAd(ad);
-                            setShowAddMediaModal(true);
-                          }}
-                          className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                          type="button"
+                          onClick={() => openEditMediaModal(ad)}
+                          className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 text-xs font-bold flex items-center gap-1 cursor-pointer whitespace-nowrap"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                           <span>Edit Media</span>
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDeleteMediaAd(ad.id)}
-                          className="p-1.5 rounded-xl text-stone-500 hover:text-rose-400 hover:bg-stone-800 cursor-pointer"
+                          className={`px-2 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                            confirmDeleteKey === `media-${ad.id}`
+                              ? 'bg-rose-600 text-white'
+                              : 'text-stone-500 hover:text-rose-400 hover:bg-stone-800'
+                          }`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {confirmDeleteKey === `media-${ad.id}` ? 'Confirm?' : <Trash2 className="w-4 h-4" />}
                         </button>
                       </div>
                     </div>
@@ -2771,7 +3363,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                 </p>
               </div>
 
-              <form onSubmit={handleGenerateCertificate} className="space-y-4 text-xs sm:text-sm">
+              <form onSubmit={handleGenerateCertificate} className="space-y-3.5 text-xs sm:text-sm">
+                {orders.filter(o => o.paymentStatus === 'Approved').length > 0 && (
+                  <div className="p-3 rounded-2xl bg-stone-950 border border-stone-800">
+                    <label className="block text-[11px] font-bold text-amber-400 mb-1">
+                      Quick-Fill from Approved Student Enrolment (Optional)
+                    </label>
+                    <select
+                      defaultValue=""
+                      onChange={(e) => {
+                        const ord = orders.find(o => o.id === e.target.value);
+                        if (ord) {
+                          setCertStudentName(ord.studentName);
+                          setCertFatherName(ord.fatherName || 'Muhammad');
+                          setCertEnrollmentNo(ord.id);
+                          setCertCourseName(ord.courseOrItemTitle);
+                        }
+                      }}
+                      className="w-full bg-stone-800 border border-stone-700 rounded-xl px-3 py-2 text-stone-200 outline-none text-xs"
+                    >
+                      <option value="">-- Select an Approved Student --</option>
+                      {orders.filter(o => o.paymentStatus === 'Approved').map(ord => (
+                        <option key={ord.id} value={ord.id}>
+                          {ord.studentName} ({ord.id}) — {ord.courseOrItemTitle}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="block font-semibold text-stone-300 mb-1">Student Full Name *</label>
                   <input
@@ -2784,16 +3404,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                   />
                 </div>
 
-                <div>
-                  <label className="block font-semibold text-stone-300 mb-1">Father's Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Tariq Mahmood"
-                    value={certFatherName}
-                    onChange={(e) => setCertFatherName(e.target.value)}
-                    className="w-full bg-stone-800 border border-stone-700 rounded-xl px-4 py-2 text-stone-100 outline-none focus:border-amber-400"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-stone-300 mb-1">Father's Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Tariq Mahmood"
+                      value={certFatherName}
+                      onChange={(e) => setCertFatherName(e.target.value)}
+                      className="w-full bg-stone-800 border border-stone-700 rounded-xl px-4 py-2 text-stone-100 outline-none focus:border-amber-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-stone-300 mb-1">Enrollment / Order ID</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. ENR-2026-1082 (optional)"
+                      value={certEnrollmentNo}
+                      onChange={(e) => setCertEnrollmentNo(e.target.value)}
+                      className="w-full bg-stone-800 border border-stone-700 rounded-xl px-3 py-2 text-stone-100 outline-none focus:border-amber-400 font-mono text-xs"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -2803,6 +3435,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                     onChange={(e) => setCertCourseName(e.target.value)}
                     className="w-full bg-stone-800 border border-stone-700 rounded-xl px-4 py-2 text-stone-100 outline-none text-xs"
                   >
+                    {!courses.some(c => c.title.en === certCourseName) && certCourseName && (
+                      <option value={certCourseName}>{certCourseName}</option>
+                    )}
                     {courses.map(c => (
                       <option key={c.id} value={c.title.en}>{c.title.en}</option>
                     ))}
@@ -2826,27 +3461,51 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                   type="submit"
                   className="w-full py-3 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs sm:text-sm shadow-md transition-all cursor-pointer font-kufi"
                 >
-                  Generate Official Certificate
+                  Issue & Sync Official Sanad Certificate
                 </button>
               </form>
 
               {/* Previously Issued Registry */}
               <div className="pt-4 border-t border-stone-800">
                 <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block mb-2">
-                  Issued Registry ({certificates.length})
+                  Issued Sanad Registry ({certificates.length})
                 </span>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto text-xs">
+                <div className="space-y-1.5 max-h-56 overflow-y-auto text-xs pr-1">
                   {certificates.map(cert => (
                     <div
                       key={cert.id}
                       onClick={() => setGeneratedCertPreview(cert)}
-                      className="p-2 bg-stone-800 hover:bg-stone-750 rounded-xl cursor-pointer flex items-center justify-between"
+                      className={`p-2.5 rounded-xl cursor-pointer flex items-center justify-between border transition-colors ${
+                        generatedCertPreview?.id === cert.id
+                          ? 'bg-stone-800 border-amber-500/60'
+                          : 'bg-stone-800/60 hover:bg-stone-800 border-stone-700/50'
+                      }`}
                     >
-                      <div>
-                        <strong className="text-stone-200 block text-xs">{cert.studentName}</strong>
-                        <span className="text-[10px] text-stone-400">{cert.certNumber}</span>
+                      <div className="min-w-0 pr-2">
+                        <strong className="text-stone-200 block text-xs truncate">{cert.studentName}</strong>
+                        <span className="text-[10px] font-mono text-amber-400">{cert.certNumber}</span>
+                        {cert.enrollmentNo && (
+                          <span className="text-[10px] font-mono text-stone-500 ml-1.5">&middot; {cert.enrollmentNo}</span>
+                        )}
                       </div>
-                      <Eye className="w-3.5 h-3.5 text-amber-400" />
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Eye className="w-3.5 h-3.5 text-amber-400" />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCertificate(cert.id);
+                          }}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer ${
+                            confirmDeleteKey === `cert-${cert.id}`
+                              ? 'bg-rose-600 text-white'
+                              : 'text-stone-500 hover:text-rose-400'
+                          }`}
+                          title="Remove Certificate"
+                        >
+                          {confirmDeleteKey === `cert-${cert.id}` ? 'Confirm?' : <Trash2 className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -2857,15 +3516,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
             <div className="lg:col-span-7">
               {generatedCertPreview ? (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-stone-400">Live Certificate Preview</span>
-                    <button
-                      onClick={() => window.print()}
-                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer font-kufi"
-                    >
-                      <Printer className="w-3.5 h-3.5" />
-                      <span>Print Certificate</span>
-                    </button>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs text-stone-400">Live Official Sanad Preview</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          downloadPrintableElement(
+                            'printable-certificate',
+                            `${generatedCertPreview.certNumber}.html`,
+                            `${generatedCertPreview.studentName} — Official Sanad`
+                          )
+                        }
+                        className="px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 border border-stone-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download (.html)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => window.print()}
+                        className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer font-kufi whitespace-nowrap"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>Print Certificate</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div
@@ -2879,7 +3555,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                       {settings.siteTitle.en}
                     </h4>
                     <p className="text-[10px] sm:text-[11px] text-stone-600 uppercase tracking-wider mb-4">
-                      Official Certificate of Scholarly Completion
+                      Official Certificate of Scholarly Completion (Sanad)
                     </p>
 
                     <p className="text-xs text-stone-600 italic">This is to certify that</p>
@@ -2895,7 +3571,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                       "{generatedCertPreview.courseName}"
                     </h4>
 
-                    <div className="inline-block px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-900 border border-amber-600/40 text-[11px] font-bold my-1">
+                    <div className="inline-block px-3 py-0.5 rounded-md bg-amber-500/20 text-amber-900 border border-amber-600/40 text-[11px] font-bold my-1">
                       Grade: {generatedCertPreview.grade}
                     </div>
 
@@ -2903,12 +3579,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                       <div className="text-left">
                         <span className="text-[10px] text-stone-500 block">Issue Date:</span>
                         <strong>{generatedCertPreview.issueDate}</strong>
-                        <span className="block font-mono text-[9px] text-stone-500 mt-0.5">{generatedCertPreview.certNumber}</span>
+                        <span className="block font-mono text-[10px] font-bold text-emerald-900 mt-0.5">
+                          Sanad ID: {generatedCertPreview.certNumber}
+                        </span>
+                        {generatedCertPreview.enrollmentNo && (
+                          <span className="block font-mono text-[9px] text-stone-500">
+                            Enrolment ID: {generatedCertPreview.enrollmentNo}
+                          </span>
+                        )}
                       </div>
                       <div className="text-right">
                         <span className="text-[10px] text-stone-500 block">Academic Director:</span>
                         <strong className="text-emerald-950 font-amiri text-sm block">{generatedCertPreview.issuedBy}</strong>
-                        <span className="text-[9px] text-amber-800 font-bold">Verified Seal & Sanad</span>
+                        <span className="text-[9px] text-amber-800 font-bold">Verified Seal &middot; Kaleem Online Academy</span>
                       </div>
                     </div>
                   </div>
@@ -2920,6 +3603,139 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                   <p className="text-xs mt-1">Fill out the form on the left to issue and print an official certificate.</p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ----------------- TAB 8B: STUDENT TESTIMONIALS CAROUSEL MANAGER ----------------- */}
+        {activeTab === 'testimonials' && (
+          <div className="space-y-6">
+            {/* Master Enable / Disable Section Toggle Card */}
+            <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2.5">
+                  <MessageSquareQuote className="w-5 h-5 text-amber-400" />
+                  <h3 className="text-xl font-bold font-kufi text-amber-300">
+                    Student Testimonials Carousel &amp; Success Stories
+                  </h3>
+                </div>
+                <p className="text-xs text-stone-400 max-w-2xl">
+                  Showcase verified student reviews and Sanad graduates in an interactive slider on the Kaleem Online Academy homepage, or toggle it off anytime with one click.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleToggleTestimonialsSection}
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 border transition-all cursor-pointer whitespace-nowrap ${
+                    settings.activeSections.testimonials !== false
+                      ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/80'
+                      : 'bg-stone-800 border-stone-700 text-stone-400 hover:text-stone-200'
+                  }`}
+                >
+                  {settings.activeSections.testimonials !== false ? (
+                    <>
+                      <Eye className="w-4 h-4 text-emerald-400" />
+                      <span>Website Section: ENABLED</span>
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="w-4 h-4 text-stone-400" />
+                      <span>Website Section: DISABLED</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={openNewTestimonialModal}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow cursor-pointer font-kufi whitespace-nowrap"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Student Story</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Testimonials Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {testimonials.map((item) => (
+                <div
+                  key={item.id}
+                  className={`p-5 rounded-3xl border transition-all flex flex-col justify-between ${
+                    item.isVisible ? 'bg-stone-900 border-stone-800' : 'bg-stone-950/60 border-stone-800/60 opacity-60'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div>
+                        <h4 className="font-bold text-stone-100 text-base">{item.studentName.en}</h4>
+                        <p className="text-xs text-amber-400 font-amiri" dir="rtl">{item.studentName.ur}</p>
+                        <p className="text-[11px] text-stone-400 mt-0.5">
+                          {item.location.en} &middot; {item.completionDate}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-0.5 text-amber-400 shrink-0">
+                        {Array.from({ length: item.rating || 5 }).map((_, idx) => (
+                          <Star key={idx} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-emerald-300 font-medium mb-2">
+                      Course: {item.courseCompleted.en}
+                      {item.certNumber && (
+                        <span className="font-mono text-amber-300 ml-2">&middot; {item.certNumber}</span>
+                      )}
+                    </div>
+
+                    <p className="text-[11px] text-amber-300/90 font-medium mb-1.5">
+                      Outcome: {item.outcome.en}
+                    </p>
+
+                    <p className="text-xs text-stone-300 leading-relaxed line-clamp-3 mb-3">
+                      &ldquo;{item.quote.en}&rdquo;
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-stone-800 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTestimonialVisibility(item.id)}
+                      className={`text-xs font-semibold flex items-center gap-1.5 cursor-pointer ${
+                        item.isVisible ? 'text-emerald-400' : 'text-stone-500'
+                      }`}
+                    >
+                      {item.isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                      <span>{item.isVisible ? 'Visible in Slider' : 'Hidden'}</span>
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openEditTestimonialModal(item)}
+                        className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-amber-500 hover:text-stone-950 text-stone-200 text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTestimonial(item.id)}
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                          confirmDeleteKey === `testi-${item.id}`
+                            ? 'bg-rose-600 text-white'
+                            : 'text-stone-500 hover:text-rose-400 hover:bg-stone-800'
+                        }`}
+                      >
+                        {confirmDeleteKey === `testi-${item.id}` ? 'Confirm?' : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -3146,32 +3962,60 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
               <label className="block font-bold text-xs text-amber-400 uppercase tracking-wider">
                 Show / Hide Website Sections
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                {Object.entries(settings.activeSections).map(([secKey, isAct]) => (
-                  <button
-                    key={secKey}
-                    type="button"
-                    onClick={() => setSettings({
-                      ...settings,
-                      activeSections: { ...settings.activeSections, [secKey]: !isAct }
-                    })}
-                    className={`p-3 rounded-xl border flex items-center justify-between capitalize transition-all cursor-pointer ${
-                      isAct ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-200' : 'bg-stone-800/60 border-stone-700 text-stone-500'
-                    }`}
-                  >
-                    <span>{secKey}</span>
-                    <span className="text-[10px] font-bold">{isAct ? '✓ Visible' : '✕ Hidden'}</span>
-                  </button>
-                ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                {Object.entries(settings.activeSections).map(([secKey, isAct]) => {
+                  const sectionLabels: Record<string, string> = {
+                    hero: 'Hero & Admissions Banner',
+                    founder: 'Founder Scholarly Profile',
+                    courses: 'Courses & Curriculum',
+                    testimonials: 'Student Testimonials Carousel',
+                    store: 'Digital Bookstore',
+                    publications: 'Scholarly Library (PDFs)',
+                    mediaAds: 'Media Flyers & Videos',
+                    portal: 'Student Portal & Sanad Verify',
+                    policies: 'Policies & Safeguards'
+                  };
+                  return (
+                    <button
+                      key={secKey}
+                      type="button"
+                      onClick={() => setSettings({
+                        ...settings,
+                        activeSections: { ...settings.activeSections, [secKey]: !isAct }
+                      })}
+                      className={`p-3 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                        isAct ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-200' : 'bg-stone-800/60 border-stone-700 text-stone-500'
+                      }`}
+                    >
+                      <span className="font-medium truncate">{sectionLabels[secKey] || secKey}</span>
+                      <span className="text-[10px] font-bold shrink-0">{isAct ? '✓ Visible' : '✕ Hidden'}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <button
-              onClick={handleSaveTheme}
-              className="w-full py-3.5 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-stone-950 text-sm shadow-md transition-all cursor-pointer font-kufi"
-            >
-              Save Theme, Background Colors & Title Settings
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                type="button"
+                onClick={handleSaveTheme}
+                className="flex-1 py-3.5 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-stone-950 text-sm shadow-md transition-all cursor-pointer font-kufi"
+              >
+                Save Theme, Background Colors &amp; Section Visibility
+              </button>
+              <button
+                type="button"
+                onClick={handleResetLocalCache}
+                className={`px-5 py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border transition-all cursor-pointer whitespace-nowrap ${
+                  confirmDeleteKey === 'reset-all'
+                    ? 'bg-rose-600 border-rose-500 text-white'
+                    : 'bg-stone-800 hover:bg-stone-700 border-stone-700 text-stone-300'
+                }`}
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>{confirmDeleteKey === 'reset-all' ? 'Click Again to Confirm Reset' : 'Reset Local Cache'}</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -3648,33 +4492,49 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
                 <div className="flex items-center gap-1.5 border border-amber-300 bg-amber-50 px-3 py-1.5 rounded-xl">
                   <ShieldCheck className="w-4 h-4 text-emerald-700" />
                   <span className="text-[10px] font-bold text-stone-800">
-                    {invoiceModalLang === 'ur' ? 'مہر و تصدیق: ادارہ دانش' : invoiceModalLang === 'ar' ? 'ختم الاعتماد الأكاديمي' : 'Verified Academy Seal'}
+                    {invoiceModalLang === 'ur' ? 'مہر و تصدیق: کلیم آن لائن اکیڈمی' : invoiceModalLang === 'ar' ? 'ختم الاعتماد الأكاديمي' : 'Verified Seal: Kaleem Online Academy'}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Modal Actions */}
-            <div className="flex justify-between items-center pt-4">
+            <div className="flex flex-wrap justify-between items-center gap-2 pt-4">
               <a
                 href={getSendWhatsAppUrl(selectedOrderForInvoice)}
                 target="_blank"
                 rel="noreferrer"
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 whitespace-nowrap"
               >
                 <Phone className="w-3.5 h-3.5" />
                 <span>Share via WhatsApp</span>
               </a>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
+                  type="button"
+                  onClick={() =>
+                    downloadPrintableElement(
+                      'printable-admin-invoice',
+                      `${selectedOrderForInvoice.id}.html`,
+                      `${selectedOrderForInvoice.studentName} — Official Invoice`
+                    )
+                  }
+                  className="px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 border border-stone-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download (.html)</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => window.print()}
-                  className="px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                 >
                   <Printer className="w-3.5 h-3.5 text-amber-400" />
                   <span>Print Receipt</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setSelectedOrderForInvoice(null)}
                   className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold cursor-pointer"
                 >
@@ -3688,493 +4548,432 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
       )}
 
       {/* ----------------- MODAL: FULL COURSE EDITOR / CREATOR ----------------- */}
-      {(editingCourse || showAddCourseModal) && (
+      {courseDraft && (
         <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 pb-6 p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
           <div className="relative w-full max-w-3xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 space-y-4">
             <h4 className="text-xl font-bold font-kufi text-amber-300">
-              {editingCourse ? 'Edit Course Syllabus & Fee' : 'Publish New Course to Curriculum'}
+              {isCourseEditMode ? 'Edit Course Syllabus & Fee' : 'Publish New Course to Curriculum'}
             </h4>
 
-            {(() => {
-              const currentCourse: Course = editingCourse || {
-                id: `course-${Date.now()}`,
-                title: { en: '', ur: '', ar: '' },
-                category: 'tajweed',
-                description: { en: '', ur: '', ar: '' },
-                feeMonthlyPKR: 4500,
-                feeUSD: 35,
-                duration: { en: '3 Months (36 Sessions)', ur: '3 ماہ (36 اسباق)', ar: '3 أشهر' },
-                classesPerWeek: 3,
-                instructor: { en: 'Mufti Danish Kaleem', ur: 'مفتی دانش کلیم', ar: 'المفتي دانش كليم' },
-                level: 'All Levels',
-                features: ['1-on-1 Zoom Lessons', 'PDF Notes', 'Completion Certificate'],
-                isVisible: true,
-                isPopular: false
-              };
-
-              return (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (editingCourse) {
-                      handleSaveCourseEdit(e);
-                    } else {
-                      handleCreateNewCourse(currentCourse);
+            <form onSubmit={handleSaveCourseDraft} className="space-y-4 text-xs">
+              {/* Titles */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Title (English) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={courseDraft.title.en}
+                    onChange={(e) =>
+                      setCourseDraft({ ...courseDraft, title: { ...courseDraft.title, en: e.target.value } })
                     }
-                  }}
-                  className="space-y-4 text-xs"
-                >
-                  {/* Titles */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Title (English) *</label>
-                      <input
-                        type="text"
-                        required
-                        value={currentCourse.title.en}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingCourse) {
-                            setEditingCourse({ ...editingCourse, title: { ...editingCourse.title, en: val } });
-                          } else {
-                            currentCourse.title.en = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
-                        placeholder="e.g. Advanced Quranic Tajweed"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Title (Urdu) *</label>
-                      <input
-                        type="text"
-                        required
-                        value={currentCourse.title.ur}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingCourse) {
-                            setEditingCourse({ ...editingCourse, title: { ...editingCourse.title, ur: val } });
-                          } else {
-                            currentCourse.title.ur = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-nastaliq"
-                        dir="rtl"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Title (Arabic)</label>
-                      <input
-                        type="text"
-                        value={currentCourse.title.ar}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingCourse) {
-                            setEditingCourse({ ...editingCourse, title: { ...editingCourse.title, ar: val } });
-                          } else {
-                            currentCourse.title.ar = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-amiri"
-                        dir="rtl"
-                      />
-                    </div>
-                  </div>
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                    placeholder="e.g. Advanced Quranic Tajweed"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Title (Urdu)</label>
+                  <input
+                    type="text"
+                    value={courseDraft.title.ur}
+                    onChange={(e) =>
+                      setCourseDraft({ ...courseDraft, title: { ...courseDraft.title, ur: e.target.value } })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-nastaliq"
+                    dir="rtl"
+                    placeholder="تجوید و قراءت کورس"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Title (Arabic)</label>
+                  <input
+                    type="text"
+                    value={courseDraft.title.ar}
+                    onChange={(e) =>
+                      setCourseDraft({ ...courseDraft, title: { ...courseDraft.title, ar: e.target.value } })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-amiri"
+                    dir="rtl"
+                    placeholder="دورة التجويد المتقن"
+                  />
+                </div>
+              </div>
 
-                  {/* Category & Pricing */}
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Category</label>
-                      <select
-                        value={currentCourse.category}
-                        onChange={(e) => {
-                          const val = e.target.value as any;
-                          if (editingCourse) {
-                            setEditingCourse({ ...editingCourse, category: val });
-                          } else {
-                            currentCourse.category = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
-                      >
-                        <option value="tajweed">Tajweed & Tarteel</option>
-                        <option value="arabic">Arabic Grammar</option>
-                        <option value="hadith_fiqh">Hadith & Fiqh</option>
-                        <option value="tafseer">Tafseer & Tadabbur</option>
-                        <option value="hifz">Quran Hifz</option>
-                        <option value="qirat">Qira'at & Sanad</option>
-                      </select>
-                    </div>
+              {/* Category & Pricing */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Category</label>
+                  <select
+                    value={courseDraft.category}
+                    onChange={(e) =>
+                      setCourseDraft({ ...courseDraft, category: e.target.value as Course['category'] })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                  >
+                    <option value="tajweed">Tajweed &amp; Tarteel</option>
+                    <option value="arabic">Arabic Grammar</option>
+                    <option value="hadith_fiqh">Hadith &amp; Fiqh</option>
+                    <option value="tafseer">Tafseer &amp; Tadabbur</option>
+                    <option value="hifz">Quran Hifz</option>
+                    <option value="qirat">Qira'at &amp; Sanad</option>
+                  </select>
+                </div>
 
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Monthly Fee (PKR)</label>
-                      <input
-                        type="number"
-                        required
-                        value={currentCourse.feeMonthlyPKR}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          if (editingCourse) {
-                            setEditingCourse({ ...editingCourse, feeMonthlyPKR: val, feeUSD: Math.round(val / 125) });
-                          } else {
-                            currentCourse.feeMonthlyPKR = val;
-                            currentCourse.feeUSD = Math.round(val / 125);
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-mono"
-                      />
-                    </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Monthly Fee (PKR)</label>
+                  <input
+                    type="number"
+                    required
+                    min={0}
+                    value={courseDraft.feeMonthlyPKR}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setCourseDraft({
+                        ...courseDraft,
+                        feeMonthlyPKR: val,
+                        feeUSD: Math.max(1, Math.round(val / 125))
+                      });
+                    }}
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-mono"
+                  />
+                </div>
 
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Duration</label>
-                      <input
-                        type="text"
-                        value={currentCourse.duration.en}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingCourse) {
-                            setEditingCourse({ ...editingCourse, duration: { ...editingCourse.duration, en: val, ur: val } });
-                          } else {
-                            currentCourse.duration.en = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
-                        placeholder="e.g. 3 Months (36 Sessions)"
-                      />
-                    </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Duration</label>
+                  <input
+                    type="text"
+                    value={courseDraft.duration.en}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCourseDraft({
+                        ...courseDraft,
+                        duration: { ...courseDraft.duration, en: val, ur: courseDraft.duration.ur || val }
+                      });
+                    }}
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                    placeholder="e.g. 3 Months (36 Sessions)"
+                  />
+                </div>
 
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Classes / Week</label>
-                      <input
-                        type="number"
-                        value={currentCourse.classesPerWeek}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          if (editingCourse) {
-                            setEditingCourse({ ...editingCourse, classesPerWeek: val });
-                          } else {
-                            currentCourse.classesPerWeek = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
-                      />
-                    </div>
-                  </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Classes / Week</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={7}
+                    value={courseDraft.classesPerWeek}
+                    onChange={(e) =>
+                      setCourseDraft({ ...courseDraft, classesPerWeek: Number(e.target.value) })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-mono"
+                  />
+                </div>
+              </div>
 
-                  {/* Description */}
-                  <div>
-                    <label className="block font-semibold text-stone-300 mb-1">Description (English)</label>
-                    <textarea
-                      rows={2}
-                      value={currentCourse.description.en}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (editingCourse) {
-                          setEditingCourse({ ...editingCourse, description: { ...editingCourse.description, en: val } });
-                        } else {
-                          currentCourse.description.en = val;
+              {/* Description */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Description (English)</label>
+                  <textarea
+                    rows={2}
+                    value={courseDraft.description.en}
+                    onChange={(e) =>
+                      setCourseDraft({
+                        ...courseDraft,
+                        description: { ...courseDraft.description, en: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Description (Urdu)</label>
+                  <textarea
+                    rows={2}
+                    value={courseDraft.description.ur}
+                    onChange={(e) =>
+                      setCourseDraft({
+                        ...courseDraft,
+                        description: { ...courseDraft.description, ur: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-nastaliq"
+                    dir="rtl"
+                  />
+                </div>
+              </div>
+
+              {/* Syllabus / Features list */}
+              <div>
+                <label className="block font-semibold text-stone-300 mb-1">Curriculum &amp; Syllabus Highlights</label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    placeholder="Add curriculum item (e.g. Makharij Drill, Waqf Rules)..."
+                    value={newCourseCurriculumInput}
+                    onChange={(e) => setNewCourseCurriculumInput(e.target.value)}
+                    className="flex-1 bg-stone-800 border border-stone-700 rounded-xl px-3 py-1.5 text-xs text-stone-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newCourseCurriculumInput.trim()) return;
+                      setCourseDraft({
+                        ...courseDraft,
+                        features: [...courseDraft.features, newCourseCurriculumInput.trim()]
+                      });
+                      setNewCourseCurriculumInput('');
+                    }}
+                    className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold cursor-pointer"
+                  >
+                    + Add
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {courseDraft.features.map((feat, idx) => (
+                    <span key={idx} className="px-2.5 py-1 rounded-lg bg-stone-800 border border-stone-700 text-stone-200 text-xs flex items-center gap-1.5">
+                      <span>{feat}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCourseDraft({
+                            ...courseDraft,
+                            features: courseDraft.features.filter((_, i) => i !== idx)
+                          })
                         }
-                      }}
-                      className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
-                    />
-                  </div>
-
-                  {/* Syllabus / Features list */}
-                  <div>
-                    <label className="block font-semibold text-stone-300 mb-1">Curriculum & Syllabus Highlights (Bullet points)</label>
-                    <div className="flex gap-2 mb-2">
-                      <input
-                        type="text"
-                        placeholder="Add curriculum item (e.g. Makharij Drill, Waqf Rules)..."
-                        value={newCourseCurriculumInput}
-                        onChange={(e) => setNewCourseCurriculumInput(e.target.value)}
-                        className="flex-1 bg-stone-800 border border-stone-700 rounded-xl px-3 py-1.5 text-xs text-stone-100"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!newCourseCurriculumInput.trim()) return;
-                          if (editingCourse) {
-                            setEditingCourse({ ...editingCourse, features: [...editingCourse.features, newCourseCurriculumInput.trim()] });
-                          } else {
-                            currentCourse.features.push(newCourseCurriculumInput.trim());
-                          }
-                          setNewCourseCurriculumInput('');
-                        }}
-                        className="px-4 py-1.5 rounded-xl bg-amber-500 text-stone-950 font-bold"
+                        className="text-stone-400 hover:text-rose-400 font-bold cursor-pointer"
                       >
-                        + Add
+                        &times;
                       </button>
-                    </div>
+                    </span>
+                  ))}
+                </div>
+              </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      {(editingCourse ? editingCourse.features : currentCourse.features).map((feat, idx) => (
-                        <span key={idx} className="px-2.5 py-1 rounded-lg bg-stone-800 border border-stone-700 text-stone-200 text-xs flex items-center gap-1.5">
-                          <span>{feat}</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (editingCourse) {
-                                setEditingCourse({ ...editingCourse, features: editingCourse.features.filter((_, i) => i !== idx) });
-                              } else {
-                                currentCourse.features = currentCourse.features.filter((_, i) => i !== idx);
-                              }
-                            }}
-                            className="text-stone-400 hover:text-rose-400 font-bold"
-                          >
-                            &times;
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+              {/* Badges and Actions */}
+              <div className="flex items-center justify-between pt-3 border-t border-stone-800">
+                <label className="flex items-center gap-2 text-xs font-semibold text-stone-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={courseDraft.isPopular || false}
+                    onChange={(e) =>
+                      setCourseDraft({ ...courseDraft, isPopular: e.target.checked })
+                    }
+                    className="rounded"
+                  />
+                  <span>Mark as High Demand / Popular Course</span>
+                </label>
 
-                  {/* Badges and Actions */}
-                  <div className="flex items-center justify-between pt-3 border-t border-stone-800">
-                    <label className="flex items-center gap-2 text-xs font-semibold text-stone-300">
-                      <input
-                        type="checkbox"
-                        checked={editingCourse ? editingCourse.isPopular : currentCourse.isPopular}
-                        onChange={(e) => {
-                          const val = e.target.checked;
-                          if (editingCourse) {
-                            setEditingCourse({ ...editingCourse, isPopular: val });
-                          } else {
-                            currentCourse.isPopular = val;
-                          }
-                        }}
-                        className="rounded"
-                      />
-                      <span>Mark as High Demand / Popular Badge</span>
-                    </label>
-
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingCourse(null);
-                          setShowAddCourseModal(false);
-                        }}
-                        className="px-4 py-2 rounded-xl bg-stone-800 text-stone-400 hover:text-white"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold font-kufi"
-                      >
-                        {editingCourse ? 'Save Changes' : 'Publish Course'}
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              );
-            })()}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCourseDraft(null)}
+                    className="px-4 py-2 rounded-xl bg-stone-800 text-stone-400 hover:text-white cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold font-kufi cursor-pointer"
+                  >
+                    {isCourseEditMode ? 'Save Changes' : 'Publish Course'}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
       {/* ----------------- MODAL: DIGITAL STORE ITEM FULL EDITOR ----------------- */}
-      {(editingStoreItem || showAddStoreModal) && (
+      {storeDraft && (
         <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 pb-6 p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
           <div className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 space-y-4">
             <h4 className="text-xl font-bold font-kufi text-amber-300">
-              {editingStoreItem ? 'Edit Bookstore Item & Digital Files' : 'Add New Bookstore Product / PDF'}
+              {isStoreEditMode ? 'Edit Bookstore Item & Digital Files' : 'Add New Bookstore Product / PDF'}
             </h4>
 
-            {(() => {
-              const currentItem: StoreItem = editingStoreItem || {
-                id: `store-${Date.now()}`,
-                title: { en: '', ur: '', ar: '' },
-                category: 'pdf',
-                pricePKR: 800,
-                priceUSD: 6,
-                description: { en: '', ur: '', ar: '' },
-                includes: ['Full PDF eBook', 'Permanent Download Access'],
-                formatBadge: 'PDF Book',
-                isVisible: true
-              };
-
-              return (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (editingStoreItem) {
-                      handleSaveStoreItemEdit(e);
-                    } else {
-                      storage.addStoreItem(currentItem);
-                      setStoreItems(storage.getStoreItems());
-                      setShowAddStoreModal(false);
-                      showToast("New Bookstore product published!");
+            <form onSubmit={handleSaveStoreDraft} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Title (English) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={storeDraft.title.en}
+                    onChange={(e) =>
+                      setStoreDraft({ ...storeDraft, title: { ...storeDraft.title, en: e.target.value } })
                     }
-                  }}
-                  className="space-y-4 text-xs"
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Title (English) *</label>
-                      <input
-                        type="text"
-                        required
-                        value={currentItem.title.en}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingStoreItem) {
-                            setEditingStoreItem({ ...editingStoreItem, title: { ...editingStoreItem.title, en: val } });
-                          } else {
-                            currentItem.title.en = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Title (Urdu) *</label>
-                      <input
-                        type="text"
-                        required
-                        value={currentItem.title.ur}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingStoreItem) {
-                            setEditingStoreItem({ ...editingStoreItem, title: { ...editingStoreItem.title, ur: val } });
-                          } else {
-                            currentItem.title.ur = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-nastaliq"
-                        dir="rtl"
-                      />
-                    </div>
-                  </div>
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Title (Urdu)</label>
+                  <input
+                    type="text"
+                    value={storeDraft.title.ur}
+                    onChange={(e) =>
+                      setStoreDraft({ ...storeDraft, title: { ...storeDraft.title, ur: e.target.value } })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-nastaliq"
+                    dir="rtl"
+                  />
+                </div>
+              </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Format Badge</label>
-                      <input
-                        type="text"
-                        value={currentItem.formatBadge}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingStoreItem) {
-                            setEditingStoreItem({ ...editingStoreItem, formatBadge: val });
-                          } else {
-                            currentItem.formatBadge = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
-                        placeholder="e.g. PDF Book, Video Module"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Price (PKR)</label>
-                      <input
-                        type="number"
-                        required
-                        value={currentItem.pricePKR}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          if (editingStoreItem) {
-                            setEditingStoreItem({ ...editingStoreItem, pricePKR: val, priceUSD: Math.round(val / 130) });
-                          } else {
-                            currentItem.pricePKR = val;
-                            currentItem.priceUSD = Math.round(val / 130);
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Price (USD)</label>
-                      <input
-                        type="number"
-                        value={currentItem.priceUSD}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          if (editingStoreItem) {
-                            setEditingStoreItem({ ...editingStoreItem, priceUSD: val });
-                          } else {
-                            currentItem.priceUSD = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-mono"
-                      />
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Format Badge</label>
+                  <input
+                    type="text"
+                    value={storeDraft.formatBadge}
+                    onChange={(e) =>
+                      setStoreDraft({ ...storeDraft, formatBadge: e.target.value })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                    placeholder="e.g. PDF Book, Video Module"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Price (PKR)</label>
+                  <input
+                    type="number"
+                    required
+                    min={0}
+                    value={storeDraft.pricePKR}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setStoreDraft({
+                        ...storeDraft,
+                        pricePKR: val,
+                        priceUSD: Math.max(1, Math.round(val / 130))
+                      });
+                    }}
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Price (USD)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={storeDraft.priceUSD}
+                    onChange={(e) =>
+                      setStoreDraft({ ...storeDraft, priceUSD: Number(e.target.value) })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-mono"
+                  />
+                </div>
+              </div>
 
-                  <div>
-                    <label className="block font-semibold text-stone-300 mb-1">Description (English)</label>
-                    <textarea
-                      rows={2}
-                      value={currentItem.description.en}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (editingStoreItem) {
-                          setEditingStoreItem({ ...editingStoreItem, description: { ...editingStoreItem.description, en: val } });
-                        } else {
-                          currentItem.description.en = val;
+              <div>
+                <label className="block font-semibold text-stone-300 mb-1">Description (English)</label>
+                <textarea
+                  rows={2}
+                  value={storeDraft.description.en}
+                  onChange={(e) =>
+                    setStoreDraft({
+                      ...storeDraft,
+                      description: { ...storeDraft.description, en: e.target.value }
+                    })
+                  }
+                  className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                />
+              </div>
+
+              {/* Included Features */}
+              <div>
+                <label className="block font-semibold text-stone-300 mb-1">Included Deliverables</label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    placeholder="Add included item (e.g. Printable Charts)..."
+                    value={newStoreFeatureInput}
+                    onChange={(e) => setNewStoreFeatureInput(e.target.value)}
+                    className="flex-1 bg-stone-800 border border-stone-700 rounded-xl px-3 py-1.5 text-xs text-stone-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newStoreFeatureInput.trim()) return;
+                      setStoreDraft({
+                        ...storeDraft,
+                        includes: [...storeDraft.includes, newStoreFeatureInput.trim()]
+                      });
+                      setNewStoreFeatureInput('');
+                    }}
+                    className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold cursor-pointer"
+                  >
+                    + Add
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {storeDraft.includes.map((inc, idx) => (
+                    <span key={idx} className="px-2.5 py-1 rounded-lg bg-stone-800 border border-stone-700 text-stone-200 text-xs flex items-center gap-1.5">
+                      <span>{inc}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setStoreDraft({
+                            ...storeDraft,
+                            includes: storeDraft.includes.filter((_, i) => i !== idx)
+                          })
                         }
-                      }}
-                      className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
-                    />
-                  </div>
+                        className="text-stone-400 hover:text-rose-400 font-bold cursor-pointer"
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
 
-                  {/* File Upload for PDF */}
-                  <div>
-                    <label className="block font-semibold text-stone-300 mb-1">Re-upload PDF or Document</label>
-                    <input
-                      type="file"
-                      accept=".pdf,application/pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                          const dataUrl = ev.target?.result as string;
-                          if (editingStoreItem) {
-                            setEditingStoreItem({
-                              ...editingStoreItem,
-                              fileName: file.name,
-                              fileSize: `${sizeInMB} MB`,
-                              fileData: dataUrl
-                            });
-                          } else {
-                            currentItem.fileName = file.name;
-                            currentItem.fileSize = `${sizeInMB} MB`;
-                            currentItem.fileData = dataUrl;
-                          }
-                        };
-                        reader.readAsDataURL(file);
-                      }}
-                      className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2 text-stone-300 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-amber-500 file:text-stone-950 file:font-bold"
-                    />
-                    {currentItem.fileName && (
-                      <p className="text-[11px] text-emerald-400 mt-1">Attached: {currentItem.fileName} ({currentItem.fileSize})</p>
-                    )}
-                  </div>
+              {/* File Upload for PDF */}
+              <div>
+                <label className="block font-semibold text-stone-300 mb-1">Upload PDF or Digital Document</label>
+                <input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const dataUrl = ev.target?.result as string;
+                      setStoreDraft(prev => prev ? {
+                        ...prev,
+                        fileName: file.name,
+                        fileSize: `${sizeInMB} MB`,
+                        fileData: dataUrl
+                      } : null);
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2 text-stone-300 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-amber-500 file:text-stone-950 file:font-bold cursor-pointer"
+                />
+                {storeDraft.fileName && (
+                  <p className="text-[11px] text-emerald-400 mt-1">Attached: {storeDraft.fileName} ({storeDraft.fileSize})</p>
+                )}
+              </div>
 
-                  <div className="flex justify-end gap-2 pt-3 border-t border-stone-800">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingStoreItem(null);
-                        setShowAddStoreModal(false);
-                      }}
-                      className="px-4 py-2 rounded-xl bg-stone-800 text-stone-400 hover:text-white"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold font-kufi"
-                    >
-                      {editingStoreItem ? 'Save Product' : 'Publish Product'}
-                    </button>
-                  </div>
-                </form>
-              );
-            })()}
+              <div className="flex justify-end gap-2 pt-3 border-t border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => setStoreDraft(null)}
+                  className="px-4 py-2 rounded-xl bg-stone-800 text-stone-400 hover:text-white cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold font-kufi cursor-pointer"
+                >
+                  {isStoreEditMode ? 'Save Product' : 'Publish Product'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -4320,227 +5119,440 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite }) => {
       )}
 
       {/* ----------------- MODAL: MEDIA ADS & VIDEO/PIC ADD OR EDIT ----------------- */}
-      {showAddMediaModal && (
+      {mediaDraft && (
         <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 pb-6 p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
           <div className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 space-y-4">
             <h4 className="text-xl font-bold font-kufi text-amber-300">
-              {editingMediaAd ? 'Edit Media Ad / Video Announcement' : 'Publish New Media Picture / Video'}
+              {isMediaEditMode ? 'Edit Media Ad / Video Announcement' : 'Publish New Media Picture / Video'}
             </h4>
 
-            {(() => {
-              const currentMedia: MediaAdItem = editingMediaAd || {
-                id: `ad-${Date.now()}`,
-                title: { en: '', ur: '', ar: '' },
-                type: 'poster',
-                mediaUrl: 'https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=1200&q=80',
-                badge: { en: 'Admissions Open', ur: 'داخلے جاری ہیں', ar: 'التسجيل متاح' },
-                description: { en: '', ur: '', ar: '' },
-                ctaText: { en: 'Enroll Now', ur: 'داخلہ لیں', ar: 'سجل الآن' },
-                ctaLink: '#courses',
-                isVisible: true
-              };
+            <form onSubmit={handleSaveMediaDraft} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Media Type</label>
+                  <select
+                    value={mediaDraft.type}
+                    onChange={(e) =>
+                      setMediaDraft({ ...mediaDraft, type: e.target.value as MediaAdItem['type'] })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                  >
+                    <option value="poster">Image Flyer / Picture Poster</option>
+                    <option value="video">Video Lecture Clip</option>
+                    <option value="announcement">Announcement Banner</option>
+                  </select>
+                </div>
 
-              return (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSaveMediaAd(currentMedia);
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Badge Text (English)</label>
+                  <input
+                    type="text"
+                    value={mediaDraft.badge.en}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setMediaDraft({
+                        ...mediaDraft,
+                        badge: { ...mediaDraft.badge, en: val, ur: mediaDraft.badge.ur || val }
+                      });
+                    }}
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Title (English) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={mediaDraft.title.en}
+                    onChange={(e) =>
+                      setMediaDraft({ ...mediaDraft, title: { ...mediaDraft.title, en: e.target.value } })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Title (Urdu)</label>
+                  <input
+                    type="text"
+                    value={mediaDraft.title.ur}
+                    onChange={(e) =>
+                      setMediaDraft({ ...mediaDraft, title: { ...mediaDraft.title, ur: e.target.value } })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-nastaliq"
+                    dir="rtl"
+                  />
+                </div>
+              </div>
+
+              {/* Picture / Video Upload or URL */}
+              <div className="p-4 bg-stone-950 rounded-2xl border border-stone-800 space-y-2">
+                <label className="block font-bold text-amber-400 text-xs">
+                  Media File Upload (Picture or Video)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const dataUrl = ev.target?.result as string;
+                      setMediaDraft(prev => prev ? { ...prev, mediaUrl: dataUrl } : null);
+                      showToast("Media file attached successfully!");
+                    };
+                    reader.readAsDataURL(file);
                   }}
-                  className="space-y-3.5 text-xs"
+                  className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2 text-stone-300 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-amber-500 file:text-stone-950 file:font-bold cursor-pointer"
+                />
+                <div>
+                  <span className="text-[10px] text-stone-400 block mb-1">Or Local / Direct Media URL:</span>
+                  <input
+                    type="text"
+                    value={mediaDraft.mediaUrl}
+                    onChange={(e) =>
+                      setMediaDraft({ ...mediaDraft, mediaUrl: e.target.value })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2 text-stone-100 font-mono text-[11px]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-300 mb-1">Description (English)</label>
+                <textarea
+                  rows={2}
+                  value={mediaDraft.description.en}
+                  onChange={(e) =>
+                    setMediaDraft({
+                      ...mediaDraft,
+                      description: { ...mediaDraft.description, en: e.target.value }
+                    })
+                  }
+                  className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Button CTA Text</label>
+                  <input
+                    type="text"
+                    value={mediaDraft.ctaText?.en || 'Enroll Now'}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setMediaDraft({
+                        ...mediaDraft,
+                        ctaText: { en: val, ur: mediaDraft.ctaText?.ur || val, ar: mediaDraft.ctaText?.ar || val }
+                      });
+                    }}
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2 text-stone-100"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Target Link</label>
+                  <input
+                    type="text"
+                    value={mediaDraft.ctaLink || '#courses'}
+                    onChange={(e) =>
+                      setMediaDraft({ ...mediaDraft, ctaLink: e.target.value })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2 text-stone-100 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => setMediaDraft(null)}
+                  className="px-4 py-2 rounded-xl bg-stone-800 text-stone-400 hover:text-white cursor-pointer"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Media Type</label>
-                      <select
-                        value={currentMedia.type}
-                        onChange={(e) => {
-                          const val = e.target.value as any;
-                          if (editingMediaAd) {
-                            setEditingMediaAd({ ...editingMediaAd, type: val });
-                          } else {
-                            currentMedia.type = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
-                      >
-                        <option value="poster">Image Flyer / Picture Poster</option>
-                        <option value="video">Video Lecture Clip</option>
-                        <option value="announcement">Announcement Banner</option>
-                      </select>
-                    </div>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold font-kufi cursor-pointer"
+                >
+                  {isMediaEditMode ? 'Save Changes' : 'Publish Media'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Badge Text (English)</label>
-                      <input
-                        type="text"
-                        value={currentMedia.badge.en}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingMediaAd) {
-                            setEditingMediaAd({ ...editingMediaAd, badge: { ...editingMediaAd.badge, en: val, ur: val } });
-                          } else {
-                            currentMedia.badge.en = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
-                      />
-                    </div>
-                  </div>
+      {/* ----------------- MODAL: STUDENT TESTIMONIAL ADD / EDIT ----------------- */}
+      {testimonialDraft && (
+        <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 sm:pt-28 pb-6 p-3 sm:p-4 bg-stone-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-stone-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[calc(100vh-7rem)] sm:max-h-[calc(100vh-8.5rem)] my-auto sm:my-0 space-y-4">
+            <h4 className="text-xl font-bold font-kufi text-amber-300 flex items-center gap-2">
+              <MessageSquareQuote className="w-5 h-5 text-amber-400" />
+              <span>{isTestimonialEditMode ? 'Edit Student Testimonial' : 'Add Student Success Story'}</span>
+            </h4>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Title (English) *</label>
-                      <input
-                        type="text"
-                        required
-                        value={currentMedia.title.en}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingMediaAd) {
-                            setEditingMediaAd({ ...editingMediaAd, title: { ...editingMediaAd.title, en: val } });
-                          } else {
-                            currentMedia.title.en = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
-                      />
-                    </div>
+            <form onSubmit={handleSaveTestimonialDraft} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Student Name (English) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={testimonialDraft.studentName.en}
+                    onChange={(e) =>
+                      setTestimonialDraft({
+                        ...testimonialDraft,
+                        studentName: { ...testimonialDraft.studentName, en: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                    placeholder="e.g. Muhammad Abdullah"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Student Name (Urdu)</label>
+                  <input
+                    type="text"
+                    value={testimonialDraft.studentName.ur}
+                    onChange={(e) =>
+                      setTestimonialDraft({
+                        ...testimonialDraft,
+                        studentName: { ...testimonialDraft.studentName, ur: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-nastaliq"
+                    dir="rtl"
+                    placeholder="محمد عبداللہ"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Student Name (Arabic)</label>
+                  <input
+                    type="text"
+                    value={testimonialDraft.studentName.ar}
+                    onChange={(e) =>
+                      setTestimonialDraft({
+                        ...testimonialDraft,
+                        studentName: { ...testimonialDraft.studentName, ar: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-amiri"
+                    dir="rtl"
+                    placeholder="محمد عبد الله"
+                  />
+                </div>
+              </div>
 
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Title (Urdu)</label>
-                      <input
-                        type="text"
-                        value={currentMedia.title.ur}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingMediaAd) {
-                            setEditingMediaAd({ ...editingMediaAd, title: { ...editingMediaAd.title, ur: val } });
-                          } else {
-                            currentMedia.title.ur = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-nastaliq"
-                        dir="rtl"
-                      />
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Role &amp; City/Country (English)</label>
+                  <input
+                    type="text"
+                    value={testimonialDraft.location.en}
+                    onChange={(e) =>
+                      setTestimonialDraft({
+                        ...testimonialDraft,
+                        location: { ...testimonialDraft.location, en: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                    placeholder="e.g. Software Engineer · London, UK"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Role &amp; City/Country (Urdu)</label>
+                  <input
+                    type="text"
+                    value={testimonialDraft.location.ur}
+                    onChange={(e) =>
+                      setTestimonialDraft({
+                        ...testimonialDraft,
+                        location: { ...testimonialDraft.location, ur: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-nastaliq"
+                    dir="rtl"
+                    placeholder="لندن، برطانیہ"
+                  />
+                </div>
+              </div>
 
-                  {/* Picture / Video Upload or URL */}
-                  <div className="p-4 bg-stone-950 rounded-2xl border border-stone-800 space-y-2">
-                    <label className="block font-bold text-amber-400 text-xs">
-                      Media File Upload (Picture or Video)
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*,video/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                          const dataUrl = ev.target?.result as string;
-                          if (editingMediaAd) {
-                            setEditingMediaAd({ ...editingMediaAd, mediaUrl: dataUrl });
-                          } else {
-                            currentMedia.mediaUrl = dataUrl;
-                          }
-                          showToast("Media file attached successfully!");
-                        };
-                        reader.readAsDataURL(file);
-                      }}
-                      className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2 text-stone-300 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-amber-500 file:text-stone-950 file:font-bold cursor-pointer"
-                    />
-                    <div>
-                      <span className="text-[10px] text-stone-400 block mb-1">Or Direct Media Image / Video URL:</span>
-                      <input
-                        type="text"
-                        value={currentMedia.mediaUrl}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingMediaAd) {
-                            setEditingMediaAd({ ...editingMediaAd, mediaUrl: val });
-                          } else {
-                            currentMedia.mediaUrl = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2 text-stone-100 font-mono text-[11px]"
-                      />
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Course Completed (English)</label>
+                  <input
+                    type="text"
+                    value={testimonialDraft.courseCompleted.en}
+                    onChange={(e) =>
+                      setTestimonialDraft({
+                        ...testimonialDraft,
+                        courseCompleted: { ...testimonialDraft.courseCompleted, en: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Course Completed (Urdu)</label>
+                  <input
+                    type="text"
+                    value={testimonialDraft.courseCompleted.ur}
+                    onChange={(e) =>
+                      setTestimonialDraft({
+                        ...testimonialDraft,
+                        courseCompleted: { ...testimonialDraft.courseCompleted, ur: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-nastaliq"
+                    dir="rtl"
+                  />
+                </div>
+              </div>
 
-                  <div>
-                    <label className="block font-semibold text-stone-300 mb-1">Description (English)</label>
-                    <textarea
-                      rows={2}
-                      value={currentMedia.description.en}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (editingMediaAd) {
-                          setEditingMediaAd({ ...editingMediaAd, description: { ...editingMediaAd.description, en: val } });
-                        } else {
-                          currentMedia.description.en = val;
-                        }
-                      }}
-                      className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
-                    />
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Key Outcome / Achievement (English)</label>
+                  <input
+                    type="text"
+                    value={testimonialDraft.outcome.en}
+                    onChange={(e) =>
+                      setTestimonialDraft({
+                        ...testimonialDraft,
+                        outcome: { ...testimonialDraft.outcome, en: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                    placeholder="e.g. Awarded Sanad with 96% Mumtaz Distinction"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Key Outcome / Achievement (Urdu)</label>
+                  <input
+                    type="text"
+                    value={testimonialDraft.outcome.ur}
+                    onChange={(e) =>
+                      setTestimonialDraft({
+                        ...testimonialDraft,
+                        outcome: { ...testimonialDraft.outcome, ur: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-nastaliq"
+                    dir="rtl"
+                  />
+                </div>
+              </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Button CTA Text</label>
-                      <input
-                        type="text"
-                        value={currentMedia.ctaText?.en || 'Enroll Now'}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingMediaAd) {
-                            setEditingMediaAd({ ...editingMediaAd, ctaText: { en: val, ur: val, ar: val } });
-                          } else {
-                            currentMedia.ctaText = { en: val, ur: val, ar: val };
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2 text-stone-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold text-stone-300 mb-1">Target Link</label>
-                      <input
-                        type="text"
-                        value={currentMedia.ctaLink || '#courses'}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (editingMediaAd) {
-                            setEditingMediaAd({ ...editingMediaAd, ctaLink: val });
-                          } else {
-                            currentMedia.ctaLink = val;
-                          }
-                        }}
-                        className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2 text-stone-100 font-mono"
-                      />
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Rating (1–5 Stars)</label>
+                  <select
+                    value={testimonialDraft.rating}
+                    onChange={(e) =>
+                      setTestimonialDraft({ ...testimonialDraft, rating: Number(e.target.value) })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                  >
+                    <option value={5}>5 Stars (Excellent)</option>
+                    <option value={4}>4 Stars (Very Good)</option>
+                    <option value={3}>3 Stars (Good)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Completion Date</label>
+                  <input
+                    type="text"
+                    value={testimonialDraft.completionDate}
+                    onChange={(e) =>
+                      setTestimonialDraft({ ...testimonialDraft, completionDate: e.target.value })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                    placeholder="e.g. Jan 2026"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Verified Sanad ID (Optional)</label>
+                  <input
+                    type="text"
+                    value={testimonialDraft.certNumber || ''}
+                    onChange={(e) =>
+                      setTestimonialDraft({ ...testimonialDraft, certNumber: e.target.value })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-mono"
+                    placeholder="e.g. KOA-CERT-2026-8841"
+                  />
+                </div>
+              </div>
 
-                  <div className="flex justify-end gap-2 pt-3 border-t border-stone-800">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingMediaAd(null);
-                        setShowAddMediaModal(false);
-                      }}
-                      className="px-4 py-2 rounded-xl bg-stone-800 text-stone-400 hover:text-white"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold font-kufi"
-                    >
-                      {editingMediaAd ? 'Save Changes' : 'Publish Media'}
-                    </button>
-                  </div>
-                </form>
-              );
-            })()}
+              <div>
+                <label className="block font-semibold text-stone-300 mb-1">Success Story / Testimonial Quote (English) *</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={testimonialDraft.quote.en}
+                  onChange={(e) =>
+                    setTestimonialDraft({
+                      ...testimonialDraft,
+                      quote: { ...testimonialDraft.quote, en: e.target.value }
+                    })
+                  }
+                  className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100"
+                  placeholder="Describe the student's before/after progress and achievement..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Testimonial Quote (Urdu)</label>
+                  <textarea
+                    rows={2}
+                    value={testimonialDraft.quote.ur}
+                    onChange={(e) =>
+                      setTestimonialDraft({
+                        ...testimonialDraft,
+                        quote: { ...testimonialDraft.quote, ur: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-nastaliq"
+                    dir="rtl"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-300 mb-1">Testimonial Quote (Arabic)</label>
+                  <textarea
+                    rows={2}
+                    value={testimonialDraft.quote.ar}
+                    onChange={(e) =>
+                      setTestimonialDraft({
+                        ...testimonialDraft,
+                        quote: { ...testimonialDraft.quote, ar: e.target.value }
+                      })
+                    }
+                    className="w-full bg-stone-800 border border-stone-700 rounded-xl p-2.5 text-stone-100 font-amiri"
+                    dir="rtl"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => setTestimonialDraft(null)}
+                  className="px-4 py-2 rounded-xl bg-stone-800 text-stone-400 hover:text-white cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold font-kufi cursor-pointer"
+                >
+                  {isTestimonialEditMode ? 'Save Changes' : 'Publish Testimonial'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

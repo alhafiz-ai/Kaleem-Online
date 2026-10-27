@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Language, SiteSettings, NoticeBanner, Course, StoreItem, LiveClassLink, PaymentGateways, MediaAdItem, ThemeMode } from './types';
+import { Language, SiteSettings, NoticeBanner, Course, StoreItem, LiveClassLink, PaymentGateways, MediaAdItem, PublicationItem, ThemeMode, TestimonialItem } from './types';
 import { storage } from './utils/storage';
 import { Navbar } from './components/Navbar';
 import { LanguageModal } from './components/LanguageModal';
@@ -18,6 +18,7 @@ import { Footer } from './components/Footer';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { AdminPanel } from './components/AdminPanel';
 import { StudentPortalSection } from './components/StudentPortalSection';
+import { TestimonialsSection } from './components/TestimonialsSection';
 
 export default function App() {
   // Check if initial hash or path wants admin (safe for subpaths/repo names)
@@ -41,6 +42,8 @@ export default function App() {
   const [liveClass, setLiveClass] = useState<LiveClassLink>(storage.getLiveClass());
   const [payments, setPayments] = useState<PaymentGateways>(storage.getPayments());
   const [mediaAds, setMediaAds] = useState<MediaAdItem[]>(storage.getMediaAds());
+  const [publications, setPublications] = useState<PublicationItem[]>(storage.getPublications());
+  const [testimonials, setTestimonials] = useState<TestimonialItem[]>(storage.getTestimonials());
 
   // Language state: 'ur' (Urdu default for authentic experience), 'en', or 'ar'
   const [lang, setLang] = useState<Language>(
@@ -68,6 +71,8 @@ export default function App() {
     setLiveClass(storage.getLiveClass());
     setPayments(storage.getPayments());
     setMediaAds(storage.getMediaAds());
+    setPublications(storage.getPublications());
+    setTestimonials(storage.getTestimonials());
   };
 
   useEffect(() => {
@@ -217,6 +222,21 @@ export default function App() {
         />
       )}
 
+      {/* Student Testimonials Carousel Section */}
+      {settings.activeSections.testimonials !== false && (
+        <TestimonialsSection
+          testimonials={testimonials}
+          lang={lang}
+          theme={theme}
+          settings={settings}
+          onVerifySanad={(certNo) => {
+            setCertVerifyInitialQuery(certNo);
+            setCertVerifyModalOpen(true);
+          }}
+          onOpenEnrollment={handleOpenEnrollment}
+        />
+      )}
+
       {/* Student Admission & Sanad Portal Section */}
       <StudentPortalSection
         lang={lang}
@@ -244,6 +264,7 @@ export default function App() {
         <PublicationsSection 
           lang={lang} 
           theme={theme}
+          publications={publications}
         />
       )}
 
@@ -324,6 +345,7 @@ export default function App() {
         }}
         lang={lang}
         initialQuery={certVerifyInitialQuery}
+        settings={settings}
       />
 
       {/* Legal & Academy Policies Modal */}

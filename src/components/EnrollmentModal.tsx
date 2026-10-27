@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Language, Course, EnrollmentOrder, SiteSettings } from '../types';
 import { UI_TEXT } from '../utils/translations';
 import { storage } from '../utils/storage';
+import { downloadPrintableElement } from '../utils/printHelper';
 import { 
   X, 
   CheckCircle, 
@@ -103,14 +104,14 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   const getWhatsAppMessage = (order: EnrollmentOrder) => {
     if (lang === 'ur') {
       const timingUr = order.preferredTime === 'morning' ? 'صبح' : order.preferredTime === 'afternoon' ? 'دوپہر' : 'شام / رات';
-      const text = `السلام علیکم مفتی دانش کلیم صاحب،\n\nمیں نے ادارہ دانش میں 1-on-1 آن لائن کلاس کا باضابطہ داخلہ فارم جمع کر دیا ہے۔\n\n*سرکاری داخلہ سلپ تفصیلات:*\n- رجسٹریشن نمبر: ${order.id}\n- طالب علم کا نام: ${order.studentName}\n- والد کا نام: ${order.fatherName}\n- مطلوبہ کورس: ${order.courseOrItemTitle}\n- کلاس کا وقت: ${timingUr}\n- شہر و ملک: ${order.countryCity}\n- واٹس ایپ نمبر: ${order.whatsapp}\n- ماہانہ تعلیمی فیس: PKR ${order.totalAmountPKR}\n- طریقہ ادائیگی: ${order.paymentMethod.toUpperCase()}\n\nبراہِ کرم درخواست ملاحظہ فرما کر کلاس کا شیڈول اور زوم لنک جاری فرما دیں۔ جزاکم اللہ خیرا!`;
+      const text = `السلام علیکم مفتی دانش کلیم صاحب،\n\nمیں نے کلیم آن لائن اکیڈمی میں 1-on-1 آن لائن کلاس کا باضابطہ داخلہ فارم جمع کر دیا ہے۔\n\n*سرکاری داخلہ سلپ تفصیلات:*\n- رجسٹریشن نمبر: ${order.id}\n- طالب علم کا نام: ${order.studentName}\n- والد کا نام: ${order.fatherName}\n- مطلوبہ کورس: ${order.courseOrItemTitle}\n- کلاس کا وقت: ${timingUr}\n- شہر و ملک: ${order.countryCity}\n- واٹس ایپ نمبر: ${order.whatsapp}\n- ماہانہ تعلیمی فیس: PKR ${order.totalAmountPKR}\n- طریقہ ادائیگی: ${order.paymentMethod.toUpperCase()}\n\nبراہِ کرم درخواست ملاحظہ فرما کر کلاس کا شیڈول اور زوم لنک جاری فرما دیں۔ جزاکم اللہ خیرا!`;
       return encodeURIComponent(text);
     } else if (lang === 'ar') {
       const timingAr = order.preferredTime === 'morning' ? 'صباحاً' : order.preferredTime === 'afternoon' ? 'ظهراً' : 'مساءً';
-      const text = `السلام عليكم ورحمة الله فضيلة المفتي دانش كليم،\n\nقمت بتقديم طلب التسجيل في الحلقات الفردية المباشرة بأكاديمية الدانش العالمية.\n\n*بيانات إيصال القيد والتسجيل:*\n- رقم القيد: ${order.id}\n- اسم الطالب: ${order.studentName}\n- اسم الوالد: ${order.fatherName}\n- المقرر الدراسي: ${order.courseOrItemTitle}\n- توقيت الحصص: ${timingAr}\n- الدولة والمدينة: ${order.countryCity}\n- رقم الواتساب: ${order.whatsapp}\n- الرسوم الشهرية: PKR ${order.totalAmountPKR}\n- وسيلة الدفع: ${order.paymentMethod.toUpperCase()}\n\nيرجى التكرم باعتماد القيد وإرسال رابط الزوم وموعد الحصص المباشرة. جزاكم الله خيراً!`;
+      const text = `السلام عليكم ورحمة الله فضيلة المفتي دانش كليم،\n\nقمت بتقديم طلب التسجيل في الحلقات الفردية المباشرة بأكاديمية كليم العالمية للتعليم الإلكتروني.\n\n*بيانات إيصال القيد والتسجيل:*\n- رقم القيد: ${order.id}\n- اسم الطالب: ${order.studentName}\n- اسم الوالد: ${order.fatherName}\n- المقرر الدراسي: ${order.courseOrItemTitle}\n- توقيت الحصص: ${timingAr}\n- الدولة والمدينة: ${order.countryCity}\n- رقم الواتساب: ${order.whatsapp}\n- الرسوم الشهرية: PKR ${order.totalAmountPKR}\n- وسيلة الدفع: ${order.paymentMethod.toUpperCase()}\n\nيرجى التكرم باعتماد القيد وإرسال رابط الزوم وموعد الحصص المباشرة. جزاكم الله خيراً!`;
       return encodeURIComponent(text);
     } else {
-      const text = `Assalamu Alaikum Mufti Danish Kaleem Sahib,\n\nI have submitted my 1-on-1 Class Enrollment at Al-Danish Islamic Academy.\n\n*Registration Slip:* \n- Reg ID: ${order.id}\n- Student Name: ${order.studentName}\n- Father's Name: ${order.fatherName}\n- Course: ${order.courseOrItemTitle}\n- Preferred Time: ${order.preferredTime.toUpperCase()}\n- Country/City: ${order.countryCity}\n- WhatsApp: ${order.whatsapp}\n- Fee Amount: PKR ${order.totalAmountPKR}\n- Payment Method: ${order.paymentMethod.toUpperCase()}\n\nPlease verify my application and share the schedule and Zoom link. JazakAllah Khair!`;
+      const text = `Assalamu Alaikum Mufti Danish Kaleem Sahib,\n\nI have submitted my 1-on-1 Class Enrollment at Kaleem Online Academy.\n\n*Registration Slip:* \n- Reg ID: ${order.id}\n- Student Name: ${order.studentName}\n- Father's Name: ${order.fatherName}\n- Course: ${order.courseOrItemTitle}\n- Preferred Time: ${order.preferredTime.toUpperCase()}\n- Country/City: ${order.countryCity}\n- WhatsApp: ${order.whatsapp}\n- Fee Amount: PKR ${order.totalAmountPKR}\n- Payment Method: ${order.paymentMethod.toUpperCase()}\n\nPlease verify my application and share the schedule and Zoom link. JazakAllah Khair!`;
       return encodeURIComponent(text);
     }
   };
@@ -513,17 +514,27 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
                 </span>
               </a>
 
-              <div className="flex gap-3 justify-center">
+              <div className="flex flex-wrap gap-2.5 justify-center">
                 <button
+                  type="button"
+                  onClick={() => downloadPrintableElement('printable-invoice', `${submittedOrder.id}.html`, `${submittedOrder.studentName} — Enrollment Slip`)}
+                  className="px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 text-xs font-semibold flex items-center gap-2 border border-amber-500/40 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{lang === 'ur' ? 'ڈاؤنلوڈ (.html)' : lang === 'ar' ? 'تحميل الاستمارة' : 'Download (.html)'}</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => window.print()}
                   className="px-5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-semibold flex items-center gap-2 border border-stone-700 cursor-pointer"
                 >
                   <Printer className="w-4 h-4 text-amber-400" />
                   <span>
-                    {lang === 'ur' ? 'داخلہ سلپ پرنٹ یا محفوظ کریں' : lang === 'ar' ? 'طباعة / حفظ استمارة التسجيل' : 'Print / Save PDF'}
+                    {lang === 'ur' ? 'داخلہ سلپ پرنٹ کریں' : lang === 'ar' ? 'طباعة استمارة التسجيل' : 'Print Slip'}
                   </span>
                 </button>
                 <button
+                  type="button"
                   onClick={onClose}
                   className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold cursor-pointer font-kufi"
                 >

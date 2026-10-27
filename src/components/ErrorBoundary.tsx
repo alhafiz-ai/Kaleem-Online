@@ -20,7 +20,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Al-Danish Academy caught an unhandled error:', error, errorInfo);
+    console.error('Kaleem Online Academy caught an unhandled error:', error, errorInfo);
   }
 
   private handleReload = () => {
@@ -47,7 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             <h1 className="text-xl font-bold font-kufi text-amber-300">
-              ادارہ دانش برائے تعلیماتِ اسلامیہ و علومِ عربیہ
+              کلیم آن لائن اکیڈمی — Kaleem Online Academy
             </h1>
             <p className="text-xs text-stone-300 leading-relaxed font-nastaliq" dir="rtl">
               صفحہ لوڈ کرتے وقت ایک عارضی مسئلہ پیش آیا ہے۔ آپ نیچے دیے گئے بٹن پر کلک کر کے صفحہ دوبارہ لوڈ کر سکتے ہیں۔
